@@ -5,6 +5,11 @@ import queue
 import numpy as np
 
 import carla
+import sys
+try:
+    sys.path.append('PythonAPI')
+except IndexError:
+    pass
 
 from agents.navigation.local_planner import RoadOption, LocalPlannerNew, LocalPlannerOld
 
@@ -46,7 +51,7 @@ class PointGoalSuite(BaseSuite):
     def ready(self):
         # print (self.planner)
         if self.planner == 'new':
-            self._local_planner = LocalPlannerNew(self._player, 2.5, 9.0, 1.5)
+            self._local_planner = LocalPlannerNew(self._player, resolution=2.5, threshold_before=25.0, threshold_after=1.5)
         else:
             self._local_planner = LocalPlannerOld(self._player)
 

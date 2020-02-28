@@ -55,7 +55,8 @@ COLORS = [
 
 
 TOWNS = ['Town01', 'Town02', 'Town03', 'Town04']
-VEHICLE_NAME = 'vehicle.ford.mustang'
+#VEHICLE_NAME = 'vehicle.ford.mustang'
+VEHICLE_NAME = "*lincoln*"
 
 def is_within_distance_ahead(target_location, current_location, orientation, max_distance, degree=60):
     u = np.array([
@@ -340,7 +341,7 @@ class TrafficTracker(object):
 class CarlaWrapper(object):
     def __init__(
             self, town='Town01', vehicle_name=VEHICLE_NAME, port=2000, client=None,
-            col_threshold=400, big_cam=False, seed=None, respawn_peds=True, **kwargs):
+            col_threshold=400, seed=None, respawn_peds=True, **kwargs):
         
         if client is None:    
             self._client = carla.Client('localhost', port)
@@ -365,7 +366,6 @@ class CarlaWrapper(object):
         # vehicle, sensor
         self._actor_dict = collections.defaultdict(list)
 
-        self._big_cam = big_cam
         self.col_threshold = col_threshold
         self.collided = False
         self._collided_frame_number = -1
@@ -380,8 +380,6 @@ class CarlaWrapper(object):
 
         self._rgb_queue = None
         self.rgb_image = None
-        self._big_cam_queue = None
-        self.big_cam_image = None
         
         self.seed = seed
 
@@ -562,10 +560,6 @@ class CarlaWrapper(object):
         # Put here for speed (get() busy polls queue).
         while self.rgb_image is None or self._rgb_queue.qsize() > 0:
             self.rgb_image = self._rgb_queue.get()
-        
-        if self._big_cam:
-            while self.big_cam_image is None or self._big_cam_queue.qsize() > 0:
-                self.big_cam_image = self._big_cam_queue.get()
 
         return True
 
@@ -577,11 +571,6 @@ class CarlaWrapper(object):
             'rgb': carla_img_to_np(self.rgb_image),
             'birdview': get_birdview(result),
             'collided': self.collided
-            })
-
-        if self._big_cam:
-            result.update({
-                'big_cam': carla_img_to_np(self.big_cam_image),
             })
 
         return result
@@ -627,10 +616,6 @@ class CarlaWrapper(object):
         if self._rgb_queue:
             with self._rgb_queue.mutex:
                 self._rgb_queue.queue.clear()
-        
-        if self._big_cam_queue:
-            with self._big_cam_queue.mutex:
-                self._big_cam_queue.queue.clear()
     
     @property
     def pedestrians(self):
@@ -647,27 +632,23 @@ class CarlaWrapper(object):
         """
         # Camera.
         self._rgb_queue = queue.Queue()
-
-        if self._big_cam:
-            self._big_cam_queue = queue.Queue()
-            rgb_camera_bp = self._blueprints.find('sensor.camera.rgb')
-            rgb_camera_bp.set_attribute('image_size_x', '800')
-            rgb_camera_bp.set_attribute('image_size_y', '600')
-            rgb_camera_bp.set_attribute('fov', '90')
-            big_camera = self._world.spawn_actor(
-                rgb_camera_bp,
-                carla.Transform(carla.Location(x=1.0, z=1.4), carla.Rotation(pitch=0)),
-                attach_to=self._player)
-            big_camera.listen(self._big_cam_queue.put)
-            self._actor_dict['sensor'].append(big_camera)
             
         rgb_camera_bp = self._blueprints.find('sensor.camera.rgb')
-        rgb_camera_bp.set_attribute('image_size_x', '384')
-        rgb_camera_bp.set_attribute('image_size_y', '160')
-        rgb_camera_bp.set_attribute('fov', '90')
+
+        # rgb_camera_bp.set_attribute('image_size_x', '384')
+        # rgb_camera_bp.set_attribute('image_size_y', '160')
+        # rgb_camera_bp.set_attribute('fov', '90')
+        # rgb_camera = self._world.spawn_actor(
+        #     rgb_camera_bp,
+        #     carla.Transform(carla.Location(x=2.0, z=1.4), carla.Rotation(pitch=0)),
+        #     attach_to=self._player)
+
+        rgb_camera_bp.set_attribute('image_size_x', '288') # MARIN I FOUND CAMERA PARAMETERS
+        rgb_camera_bp.set_attribute('image_size_y', '288')
+        rgb_camera_bp.set_attribute('fov', '100')
         rgb_camera = self._world.spawn_actor(
             rgb_camera_bp,
-            carla.Transform(carla.Location(x=2.0, z=1.4), carla.Rotation(pitch=0)),
+            carla.Transform(carla.Location(x=1.5, z=2.4), carla.Rotation(pitch=0)),
             attach_to=self._player)
 
         rgb_camera.listen(self._rgb_queue.put)

@@ -7,20 +7,9 @@ import carla
 
 class Agent(object):
     def __init__(self, model=None, **kwargs):
-        assert model is not None
-
-        if len(kwargs) > 0:
-            print('Unused kwargs: %s' % kwargs)
-
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.transform = transforms.ToTensor()
-
-        self.one_hot = torch.FloatTensor(torch.eye(4))
-
-        self.model = model.to(self.device)
-        self.model.eval()
-
+        print("we are testing agent marin")
         self.debug = dict()
+
 
     def postprocess(self, steer, throttle, brake):
         control = carla.VehicleControl()
