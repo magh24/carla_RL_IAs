@@ -1,46 +1,23 @@
-# Learning by Cheating
+# End-to-End Model-Free Reinforcement Learning for Urban Driving using Implicit Affordances
 
-This repo is the implemention of paper Learning by Cheating in CARLA 0.9.6.
+This repo contains the inference code and the weights of the paper. It's a fork of the
+repository [**Learning by Cheating**](https://github.com/dianchen96/LearningByCheating) 
+from which we just kept all the code related to the evaluation on the standard CARLA
+benchmark and on the new release No-Crash benchmark.
 
-![teaser](figs/fig1.png)
-> [**Learning by Cheating**](https://arxiv.org/abs/1912.12294)    
-> Dian Chen, Brady Zhou, Vladlen Koltun, Philipp Kr&auml;henb&uuml;hl,        
-> [Conference on Robot Learning](https://www.robot-learning.org) (CoRL 2019)      
-> _arXiv 1912.12294_
-
-Code in CARLA 0.9.5 is coming soon.
-
-
-## Reference
-If you find this repo to be useful in your research, please consider citing our work
-```
-@inproceedings{chen2019lbc,
-  author    = {Dian Chen and Brady Zhou and Vladlen Koltun and Philipp Kr\"ahenb\"uhl},
-  title     = {Learning by Cheating},
-  booktitle = {Conference on Robot Learning (CoRL)},
-  year      = {2019},
-}
-```
-
-## Video
-For a summarization of this project, please checkout our [video](https://youtu.be/u9ZCxxD-UUw).
-
-## Installation
-Please refer to [INSTALL.md](INSTALL.md) for setup instructions. 
-
-### Quick start
+### Installation
 We provide a quick script here in case you would like to skip compiling and directly use the official binary release:
 
 ```bash
 # Download CARLA 0.9.6
 wget http://carla-assets-internal.s3.amazonaws.com/Releases/Linux/CARLA_0.9.6.tar.gz
-mkdir carla_lbc
-tar -xvzf CARLA_0.9.6.tar.gz -C carla_lbc
-cd carla_lbc
+mkdir carla_RL_IAs
+tar -xvzf CARLA_0.9.6.tar.gz -C carla_RL_IAs
+cd carla_RL_IAs
 
 # Download LBC
 git init
-git remote add origin https://github.com/dianchen96/LearningByCheating.git
+git remote add origin https:///github.com/marintoro/LearningByCheatingg.git
 git pull origin release-0.9.6
 wget http://www.cs.utexas.edu/~dchen/lbc_release/navmesh/Town01.bin
 wget http://www.cs.utexas.edu/~dchen/lbc_release/navmesh/Town02.bin
@@ -56,22 +33,27 @@ rm carla-0.9.6-py3.5-linux-x86_64.egg
 wget http://www.cs.utexas.edu/~dchen/lbc_release/egg/carla-0.9.6-py3.5-linux-x86_64.egg
 easy_install carla-0.9.6-py3.5-linux-x86_64.egg
 
-# Download model checkpoints
+# Download model checkpoints used for CARLA challenge
 cd ../../..
-mkdir -p ckpts/image
-cd ckpts/image
-wget http://www.cs.utexas.edu/~dchen/lbc_release/ckpts/image/model-10.th
-wget http://www.cs.utexas.edu/~dchen/lbc_release/ckpts/image/config.json
-cd ../..
-mkdir -p ckpts/priveleged
-cd ckpts/priveleged
-wget http://www.cs.utexas.edu/~dchen/lbc_release/ckpts/privileged/model-128.th
-wget http://www.cs.utexas.edu/~dchen/lbc_release/ckpts/privileged/config.json
+wget https://github.com/marintoro/LearningByCheating/releases/download/v1.0/model_RL_IAs_CARLA_Challenge.zip
+tar -xvzf model_RL_IAs_CARLA_Challenge.zip
+
+# Download model checkpoints trained only on Town01
+wget https://github.com/marintoro/LearningByCheating/releases/download/v1.0/model_RL_IAs_only_town01_train_weather.zip
+tar -xvzf model_RL_IAs_only_town01_train_weather.zip
+
 cd ../..
 ```
 
 Then, open up a terminal, inside the carla directory run `./CarlaUE4.sh -fps=10 -benchmark`. 
-Open another terminal and run `CUDA_VISIBLE_DEVICES="0" python benchmark_agent.py --suite=town2 --model-path=ckpts/image/model-10.th --show` to see the image model drive in the testing town!
+Open another terminal and run `CUDA_VISIBLE_DEVICES="0" python benchmark_agent.py --suite=town2 
+--max-run 100 --path-folder-model model_RL_IAs_only_town01_train_weather/ --render --crop-sky` 
+to see our model driving on test town!
+
+If you want to see our model used for the CARLA challenge you need to run instead
+`CUDA_VISIBLE_DEVICES="0" python benchmark_agent.py --suite=town2 
+--max-run 100 --path-folder-model model_RL_IAs_CARLA_Challenge/ --render` 
+
 
 ## Benchmark Results (0.9.6 w/ pedestrians fix)
 Since CARLA does not have an official 0.9+ version that supports pedestrian crossing, we modified the most up-to-date CARLA (0.9.6) to support pedestrian crossing to compare to the original benchmark.
