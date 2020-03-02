@@ -1,20 +1,19 @@
 import argparse
 import time
-print("test torchvision bug before!")
-import torchvision.models as models
-print("test torchvision bug after!")
+# print("test torchvision bug before!")
+# import torchvision.models as models
+# print("test torchvision bug after!")
 from pathlib import Path
 
 from benchmark import make_suite, get_suites, ALL_SUITES
 from benchmark.run_benchmark import run_benchmark
 
-import bird_view.utils.bz_utils as bzu
 import torch
 import random
 import os
 
 
-def run(args, model_path, port, suite, seed, autopilot, resume, max_run):
+def run(args, model_path, port, suite, seed, resume, max_run):
     log_dir = model_path
 
     total_time = 0.0
@@ -22,19 +21,15 @@ def run(args, model_path, port, suite, seed, autopilot, resume, max_run):
     for suite_name in get_suites(suite):
         tick = time.time()
 
-        benchmark_dir = log_dir / 'benchmark' / model_path.stem / ('%s_seed%d' % (suite_name, seed))
+        benchmark_dir = log_dir / 'benchmark' / ('%s_seed%d' % (suite_name, seed))
         benchmark_dir.mkdir(parents=True, exist_ok=True)
 
         with make_suite(suite_name, port=port) as env:
-            if autopilot:
-                from bird_view.models.roaming import RoamingAgentMine
-                agent_class = RoamingAgentMine
-            else:
-                from bird_view.models import marin_agent
-                agent_class = marin_agent.AgentMarin
+            from bird_view.models import marin_agent
+            agent_class = marin_agent.AgentMarin
 
             agent_maker = lambda: agent_class(args)
-            run_benchmark(agent_maker, env, benchmark_dir, seed, autopilot, resume, max_run=max_run)
+            run_benchmark(agent_maker, env, benchmark_dir, seed, resume, max_run=max_run)
         elapsed = time.time() - tick
         total_time += elapsed
 
@@ -50,7 +45,6 @@ if __name__ == '__main__':
     parser.add_argument('--port', type=int, default=2000)
     parser.add_argument('--suite', choices=ALL_SUITES, default='town1')
     parser.add_argument('--seed', type=int, default=2019)
-    parser.add_argument('--autopilot', action='store_true', default=False)
     parser.add_argument('--resume', action='store_true')
     parser.add_argument('--max-run', type=int, default=100)
 
@@ -89,4 +83,4 @@ if __name__ == '__main__':
 
     args.path_folder_model = os.path.join(os.path.dirname(os.path.realpath(__file__)), args.path_folder_model)
 
-    run(args, Path(args.path_folder_model), args.port, args.suite, args.seed, args.autopilot, args.resume, max_run=args.max_run)
+    run(args, Path(args.path_folder_model), args.port, args.suite, args.seed, args.resume, max_run=args.max_run)

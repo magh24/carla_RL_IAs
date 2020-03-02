@@ -5,22 +5,15 @@ import numpy as np
 import tqdm
 import time
 
-import bird_view.utils.bz_utils as bzu
 import bird_view.utils.carla_utils as cu
 
-from bird_view.models.common import crop_birdview
 
-
-def run_single(env, weather, start, target, agent_maker, seed, autopilot):
+def run_single(env, weather, start, target, agent_maker, seed):
     # HACK: deterministic vehicle spawns.
     env.seed = seed
     env.init(start=start, target=target, weather=cu.PRESET_WEATHERS[weather])
 
-    if not autopilot:
-        agent = agent_maker()
-    else:
-        agent = agent_maker(env._player, resolution=1, threshold=7.5)
-        agent.set_route(env._start_pose.location, env._target_pose.location)
+    agent = agent_maker()
 
     diagnostics = list()
     result = {
@@ -51,7 +44,7 @@ def run_single(env, weather, start, target, agent_maker, seed, autopilot):
     return result, diagnostics
 
 
-def run_benchmark(agent_maker, env, benchmark_dir, seed, autopilot, resume, max_run=5):
+def run_benchmark(agent_maker, env, benchmark_dir, seed, resume, max_run=5):
     """
     benchmark_dir must be an instance of pathlib.Path
     """
@@ -79,9 +72,7 @@ def run_benchmark(agent_maker, env, benchmark_dir, seed, autopilot, resume, max_
 
         diagnostics_csv = str(diagnostics_dir / ('%s.csv' % run_name))
 
-        bzu.init_video(save_dir=str(benchmark_dir / 'videos'), save_path=run_name)
-
-        result, diagnostics = run_single(env, weather, start, target, agent_maker, seed, autopilot)
+        result, diagnostics = run_single(env, weather, start, target, agent_maker, seed)
 
         summary = summary.append(result, ignore_index=True)
 

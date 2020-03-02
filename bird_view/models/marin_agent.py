@@ -3,13 +3,13 @@ import torch
 from collections import deque, namedtuple
 import cv2
 import glob, os
+import carla
 
-from .agent import Agent
 from .model_supervised import Model_Segmentation_Traffic_Light_Supervised
 from .model_RL import DQN, Orders
 
 
-class AgentMarin(Agent):
+class AgentMarin():
     def __init__(self, args=None, **kwargs):
         super().__init__(**kwargs)
 
@@ -29,7 +29,8 @@ class AgentMarin(Agent):
             print("We didn't find any model supervised in folder ", path_to_model_supervised)
             exit(1)
 
-        model_supervised = Model_Segmentation_Traffic_Light_Supervised(len(args.steps_image), len(args.steps_image), 1024, 6, 4) # All this magic number should match the one used when training supervised...
+        # All this magic number should match the one used when training supervised...
+        model_supervised = Model_Segmentation_Traffic_Light_Supervised(len(args.steps_image), len(args.steps_image), 1024, 6, 4, args.crop_sky)
         model_supervised.load_state_dict(torch.load(path_model_supervised, map_location=args.device))
         model_supervised.to(device=args.device)
 
@@ -180,7 +181,11 @@ class AgentMarin(Agent):
         else:
             brake = brake / len(tab_action)
 
-        control = self.postprocess(steer, throttle, brake)
+        control = carla.VehicleControl()
+        control.steer = np.clip(steer, -1.0, 1.0)
+        control.throttle = np.clip(throttle, 0.0, 1.0)
+        control.brake = np.clip(brake, 0.0, 1.0)
+        control.manual_gear_shift = False
         self.last_steering = steer
         return control
 
