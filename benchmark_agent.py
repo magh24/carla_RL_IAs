@@ -24,9 +24,9 @@ def run(args, model_path, port, suite, seed, resume, max_run):
         benchmark_dir = log_dir / 'benchmark' / ('%s_seed%d' % (suite_name, seed))
         benchmark_dir.mkdir(parents=True, exist_ok=True)
 
-        with make_suite(suite_name, port=port) as env:
-            from bird_view.models import marin_agent
-            agent_class = marin_agent.AgentMarin
+        with make_suite(suite_name, port=port, crop_sky=args.crop_sky) as env:
+            from bird_view.models import agent_IAs_RL
+            agent_class = agent_IAs_RL.AgentIAsRL
 
             agent_maker = lambda: agent_class(args)
             run_benchmark(agent_maker, env, benchmark_dir, seed, resume, max_run=max_run)

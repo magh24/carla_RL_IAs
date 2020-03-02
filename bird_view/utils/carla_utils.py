@@ -635,17 +635,14 @@ class CarlaWrapper(object):
             
         rgb_camera_bp = self._blueprints.find('sensor.camera.rgb')
 
-        # rgb_camera_bp.set_attribute('image_size_x', '384')
-        # rgb_camera_bp.set_attribute('image_size_y', '160')
-        # rgb_camera_bp.set_attribute('fov', '90')
-        # rgb_camera = self._world.spawn_actor(
-        #     rgb_camera_bp,
-        #     carla.Transform(carla.Location(x=2.0, z=1.4), carla.Rotation(pitch=0)),
-        #     attach_to=self._player)
-
-        rgb_camera_bp.set_attribute('image_size_x', '288') # MARIN I FOUND CAMERA PARAMETERS
+        rgb_camera_bp.set_attribute('image_size_x', '288')
         rgb_camera_bp.set_attribute('image_size_y', '288')
-        rgb_camera_bp.set_attribute('fov', '100')
+        if self.crop_sky:
+            # We used a FOV of 100 for the only town01 training (and we cropped sky)
+            rgb_camera_bp.set_attribute('fov', '100')
+        else:
+            # We used a FOV of 90 for the CARLA challenge
+            rgb_camera_bp.set_attribute('fov', '90')
         rgb_camera = self._world.spawn_actor(
             rgb_camera_bp,
             carla.Transform(carla.Location(x=1.5, z=2.4), carla.Rotation(pitch=0)),

@@ -43,6 +43,8 @@ class PointGoalSuite(BaseSuite):
         self.viz_camera = viz_camera
         self._viz_queue = None
 
+        self.crop_sky = kwargs["crop_sky"]
+
     def init(self, target=1, **kwargs):
         self._target_pose = self._map.get_spawn_points()[target]
 

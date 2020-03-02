@@ -9,7 +9,7 @@ from .model_supervised import Model_Segmentation_Traffic_Light_Supervised
 from .model_RL import DQN, Orders
 
 
-class AgentMarin():
+class AgentIAsRL():
     def __init__(self, args=None, **kwargs):
         super().__init__(**kwargs)
 
@@ -125,7 +125,7 @@ class AgentMarin():
             rgb = np.array(rgb)
         if self.args.render:
             bgr = rgb[:, :, ::-1]
-            cv2.imshow("bgr_in_agent_marin", bgr)
+            cv2.imshow("network input", bgr)
             cv2.waitKey(1)
 
         rgb = np.rollaxis(rgb, 2, 0)
