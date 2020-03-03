@@ -90,6 +90,9 @@ class AgentIAsRL():
 
         self.current_timestep = 0
 
+        self.nb_frame_stuck = 0
+        self.speed_stuck = 5/3.6 # 5km/h
+
     def act(self, state_buffer, RL_model):
         speeds = []
         order = state_buffer[-1].order
@@ -180,6 +183,16 @@ class AgentIAsRL():
             brake = 0
         else:
             brake = brake / len(tab_action)
+
+        # This is a little hack to "destuck" agent, sometimes the image is
+        # always the same and the agent never ever move...
+        if speed < self.speed_stuck:
+            self.nb_frame_stuck += 1
+        else:
+            self.nb_frame_stuck = 0
+        if self.current_timestep < 15 or self.nb_frame_stuck > 1000:
+            brake = 0
+            throttle = 0.5
 
         control = carla.VehicleControl()
         control.steer = np.clip(steer, -1.0, 1.0)
