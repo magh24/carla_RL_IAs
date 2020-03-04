@@ -25,7 +25,12 @@ mv Town*.bin CarlaUE4/Content/Carla/Maps/Nav/
 
 # Create conda environment
 conda env create -f environment.yml
-conda activate carla
+conda activate carla_RL_IAs
+# BE CAREFUL: you need to install pytorch according to your cuda version
+#conda install pytorch torchvision cudatoolkit=10.1 -c pytorch 
+#conda install pytorch torchvision cudatoolkit=10.0 -c pytorch
+conda install pytorch==1.1.0 torchvision==0.3.0 cudatoolkit=9.0 -c pytorch
+pip install --upgrade pip
 
 # Install carla client
 cd PythonAPI/carla/dist
