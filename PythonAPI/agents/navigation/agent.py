@@ -15,21 +15,27 @@ from enum import Enum
 import carla
 import os.path as osp
 import numpy as np
-from agents.tools.misc import is_within_distance_ahead, compute_magnitude_angle, compute_yaw_difference
+from agents.tools.misc import (
+    is_within_distance_ahead,
+    compute_magnitude_angle,
+    compute_yaw_difference,
+)
 
 from skimage.io import imread
 
 
 WORLD_OFFSETS = {
-    'Town01' : (-52.059906005859375, -52.04995942115784),
-    'Town02' : (-57.459808349609375, 55.3907470703125)
+    "Town01": (-52.059906005859375, -52.04995942115784),
+    "Town02": (-57.459808349609375, 55.3907470703125),
 }
 PIXELS_PER_METER = 5
+
 
 class AgentState(Enum):
     """
     AGENT_STATE represents the possible states of a roaming agent
     """
+
     NAVIGATING = 1
     BLOCKED_BY_VEHICLE = 2
     BLOCKED_RED_LIGHT = 3
@@ -59,7 +65,7 @@ class Agent(object):
             except RuntimeError as e:
                 print(e)
 
-        self._road_map = imread(osp.join(osp.dirname(__file__), '%s.png' % self._map.name))
+        self._road_map = imread(osp.join(osp.dirname(__file__), "%s.png" % self._map.name))
 
     def run_step(self, inputs=None, debug=False):
         """
@@ -87,7 +93,7 @@ class Agent(object):
                  - traffic_light is the object itself or None if there is no
                    red traffic light affecting us
         """
-        if self._map.name == 'Town01' or self._map.name == 'Town02':
+        if self._map.name == "Town01" or self._map.name == "Town02":
             return self._is_light_red_europe_style(lights_list)
         else:
             return self._is_light_red_us_style(lights_list)
@@ -108,7 +114,7 @@ class Agent(object):
 
         ego_vehicle_location = self._vehicle.get_location()
         ego_vehicle_waypoint = self._map.get_waypoint(ego_vehicle_location)
-        
+
         for traffic_light in lights_list:
             location = traffic_light.get_location()
             object_waypoint = self._map.get_waypoint(location)
@@ -118,10 +124,12 @@ class Agent(object):
             if object_waypoint.lane_id != ego_vehicle_waypoint.lane_id:
                 continue
             if not is_within_distance_ahead(
-                    location,
-                    ego_vehicle_location,
-                    self._vehicle.get_transform().rotation.yaw,
-                    self._proximity_threshold, degree=60):
+                location,
+                ego_vehicle_location,
+                self._vehicle.get_transform().rotation.yaw,
+                self._proximity_threshold,
+                degree=60,
+            ):
                 continue
             if traffic_light.state != carla.libcarla.TrafficLightState.Red:
                 continue
@@ -150,16 +158,14 @@ class Agent(object):
 
         if self._local_planner._target_waypoint is not None:
             if self._local_planner._target_waypoint.is_intersection:
-                potential_lights = []
                 min_angle = 180.0
                 sel_magnitude = 0.0
                 sel_traffic_light = None
                 for traffic_light in lights_list:
                     loc = traffic_light.get_location()
                     magnitude, angle = compute_magnitude_angle(
-                            loc,
-                            ego_vehicle_location,
-                            self._vehicle.get_transform().rotation.yaw)
+                        loc, ego_vehicle_location, self._vehicle.get_transform().rotation.yaw
+                    )
                     if magnitude < 80.0 and angle < min(25.0, min_angle):
                         sel_magnitude = magnitude
                         sel_traffic_light = traffic_light
@@ -168,8 +174,10 @@ class Agent(object):
                 if sel_traffic_light is not None:
                     if debug:
                         print(
-                                '=== Magnitude = {} | Angle = {} | ID = {}'.format(
-                                    sel_magnitude, min_angle, sel_traffic_light.id))
+                            "=== Magnitude = {} | Angle = {} | ID = {}".format(
+                                sel_magnitude, min_angle, sel_traffic_light.id
+                            )
+                        )
 
                     if self._last_traffic_light is None:
                         self._last_traffic_light = sel_traffic_light
@@ -183,18 +191,21 @@ class Agent(object):
 
     def _is_walker_hazard(self, walkers_list):
         ego_vehicle_location = self._vehicle.get_location()
-        ego_vehicle_waypoint = self._map.get_waypoint(ego_vehicle_location)
 
         for walker in walkers_list:
             loc = walker.get_location()
             dist = loc.distance(ego_vehicle_location)
-            degree = 162 / (np.clip(dist, 1.5, 10.5)+0.3)
+            degree = 162 / (np.clip(dist, 1.5, 10.5) + 0.3)
             if self._is_point_on_sidewalk(loc):
                 continue
 
-            if is_within_distance_ahead(loc, ego_vehicle_location,
-                                        self._vehicle.get_transform().rotation.yaw,
-                                        self._proximity_threshold, degree=degree):
+            if is_within_distance_ahead(
+                loc,
+                ego_vehicle_location,
+                self._vehicle.get_transform().rotation.yaw,
+                self._proximity_threshold,
+                degree=degree,
+            ):
                 return (True, walker)
 
         return (False, None)
@@ -219,7 +230,6 @@ class Agent(object):
 
         ego_vehicle_location = self._vehicle.get_location()
         ego_vehicle_orientation = self._vehicle.get_transform().rotation.yaw
-        ego_vehicle_waypoint = self._map.get_waypoint(ego_vehicle_location)
 
         for target_vehicle in vehicle_list:
             # do not account for the ego vehicle
@@ -229,27 +239,18 @@ class Agent(object):
             loc = target_vehicle.get_location()
             ori = target_vehicle.get_transform().rotation.yaw
 
-            target_vehicle_waypoint = self._map.get_waypoint(target_vehicle.get_location())
-
-            # waiting = ego_vehicle_waypoint.is_intersection and target_vehicle.get_traffic_light_state() == carla.TrafficLightState.Red
-            # print ("Not our lane: ", other_lane)
-            # print ("Waiting", waiting)
-
-            # if the object is not in our lane it's not an obstacle
-            # if not ego_vehicle_waypoint.is_intersection and target_vehicle_waypoint.lane_id != ego_vehicle_waypoint.lane_id
-            #     continue
-
-            # if the object is waiting for it's not an obstacle
-            # if waiting:
-            #     continue
-
-            if compute_yaw_difference(ego_vehicle_orientation, ori) <= 150 and is_within_distance_ahead(loc, ego_vehicle_location,
-                                        self._vehicle.get_transform().rotation.yaw,
-                                        self._proximity_threshold, degree=45):
+            if compute_yaw_difference(
+                ego_vehicle_orientation, ori
+            ) <= 150 and is_within_distance_ahead(
+                loc,
+                ego_vehicle_location,
+                self._vehicle.get_transform().rotation.yaw,
+                self._proximity_threshold,
+                degree=45,
+            ):
                 return (True, target_vehicle)
 
         return (False, None)
-
 
     def emergency_stop(self):
         """
@@ -264,18 +265,17 @@ class Agent(object):
 
         return control
 
-
     def _world_to_pixel(self, location, offset=(0, 0)):
         world_offset = WORLD_OFFSETS[self._map.name]
         x = PIXELS_PER_METER * (location.x - world_offset[0])
         y = PIXELS_PER_METER * (location.y - world_offset[1])
         return [int(x - offset[0]), int(y - offset[1])]
-    
+
     def _is_point_on_sidewalk(self, loc):
         # Convert to pixel coordinate
         pixel_x, pixel_y = self._world_to_pixel(loc)
-        pixel_y = np.clip(pixel_y, 0, self._road_map.shape[0]-1)
-        pixel_x = np.clip(pixel_x, 0, self._road_map.shape[1]-1)
+        pixel_y = np.clip(pixel_y, 0, self._road_map.shape[0] - 1)
+        pixel_x = np.clip(pixel_x, 0, self._road_map.shape[1] - 1)
         point = self._road_map[pixel_y, pixel_x, 0]
 
         return point == 0

@@ -11,10 +11,16 @@ import os
 import sys
 
 try:
-    sys.path.append(glob.glob('**/*%d.%d-%s.egg' % (
-        sys.version_info.major,
-        sys.version_info.minor,
-        'win-amd64' if os.name == 'nt' else 'linux-x86_64'))[0])
+    sys.path.append(
+        glob.glob(
+            "**/*%d.%d-%s.egg"
+            % (
+                sys.version_info.major,
+                sys.version_info.minor,
+                "win-amd64" if os.name == "nt" else "linux-x86_64",
+            )
+        )[0]
+    )
 except IndexError:
     pass
 
@@ -22,7 +28,6 @@ import carla
 
 import math
 import random
-import time
 
 
 def get_transform(vehicle_location, angle, d=6.4):
@@ -32,11 +37,11 @@ def get_transform(vehicle_location, angle, d=6.4):
 
 
 def main():
-    client = carla.Client('localhost', 2000)
+    client = carla.Client("localhost", 2000)
     client.set_timeout(2.0)
     world = client.get_world()
     spectator = world.get_spectator()
-    vehicle_blueprints = world.get_blueprint_library().filter('vehicle')
+    vehicle_blueprints = world.get_blueprint_library().filter("vehicle")
 
     location = random.choice(world.get_map().get_spawn_points()).location
 
@@ -59,6 +64,6 @@ def main():
             vehicle.destroy()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     main()

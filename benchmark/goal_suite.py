@@ -6,8 +6,9 @@ import numpy as np
 
 import carla
 import sys
+
 try:
-    sys.path.append('PythonAPI')
+    sys.path.append("PythonAPI")
 except IndexError:
     pass
 
@@ -18,7 +19,7 @@ from .base_suite import BaseSuite
 
 def from_file(poses_txt):
     pairs_file = Path(__file__).parent / poses_txt
-    pairs = pairs_file.read_text().strip().split('\n')
+    pairs = pairs_file.read_text().strip().split("\n")
     pairs = [(int(x[0]), int(x[1])) for x in map(lambda y: y.split(), pairs)]
 
     return pairs
@@ -26,8 +27,14 @@ def from_file(poses_txt):
 
 class PointGoalSuite(BaseSuite):
     def __init__(
-            self, success_dist=5.0, col_is_failure=False,
-            viz_camera=False, planner='new', poses_txt='', **kwargs):
+        self,
+        success_dist=5.0,
+        col_is_failure=False,
+        viz_camera=False,
+        planner="new",
+        poses_txt="",
+        **kwargs
+    ):
         super().__init__(**kwargs)
 
         self.success_dist = success_dist
@@ -38,7 +45,7 @@ class PointGoalSuite(BaseSuite):
         self.command = RoadOption.LANEFOLLOW
 
         self.timestamp_active = 0
-        self._timeout = float('inf')
+        self._timeout = float("inf")
 
         self.viz_camera = viz_camera
         self._viz_queue = None
@@ -52,8 +59,10 @@ class PointGoalSuite(BaseSuite):
 
     def ready(self):
         # print (self.planner)
-        if self.planner == 'new':
-            self._local_planner = LocalPlannerNew(self._player, resolution=2.5, threshold_before=25.0, threshold_after=1.5)
+        if self.planner == "new":
+            self._local_planner = LocalPlannerNew(
+                self._player, resolution=2.5, threshold_before=25.0, threshold_after=1.5
+            )
         else:
             self._local_planner = LocalPlannerOld(self._player)
 
@@ -75,9 +84,9 @@ class PointGoalSuite(BaseSuite):
     def get_observations(self):
         result = dict()
         result.update(super().get_observations())
-        result['command'] = int(self.command)
-        result['node'] = np.array([self.node.x, self.node.y])
-        result['next'] = np.array([self._next.x, self._next.y])
+        result["command"] = int(self.command)
+        result["node"] = np.array([self.node.x, self.node.y])
+        result["next"] = np.array([self._next.x, self._next.y])
 
         return result
 
@@ -93,7 +102,7 @@ class PointGoalSuite(BaseSuite):
         super().clean_up()
 
         self.timestamp_active = 0
-        self._timeout = float('inf')
+        self._timeout = float("inf")
         self._local_planner = None
 
         # Clean-up cameras
@@ -112,7 +121,7 @@ class PointGoalSuite(BaseSuite):
     def is_success(self):
         location = self._player.get_location()
         distance = location.distance(self._target_pose.location)
-        
+
         return distance <= self.success_dist
 
     def apply_control(self, control):
@@ -132,24 +141,24 @@ class PointGoalSuite(BaseSuite):
         speed = np.linalg.norm([velocity.x, velocity.y, velocity.z])
 
         info = {
-                'x': location.x,
-                'y': location.y,
-                'z': location.z,
-                'ori_x': orientation.x,
-                'ori_y': orientation.y,
-                'speed': speed,
-                'collided': self.collided,
-                'invaded': self.invaded,
-                'distance_to_goal': self._local_planner.distance_to_goal,
-                'viz_img': self._viz_queue.get() if self.viz_camera else None
-                }
+            "x": location.x,
+            "y": location.y,
+            "z": location.z,
+            "ori_x": orientation.x,
+            "ori_y": orientation.y,
+            "speed": speed,
+            "collided": self.collided,
+            "invaded": self.invaded,
+            "distance_to_goal": self._local_planner.distance_to_goal,
+            "viz_img": self._viz_queue.get() if self.viz_camera else None,
+        }
 
         info.update(result)
 
         return info
 
     def _is_light_red(self, agent):
-        lights_list = self._world.get_actors().filter('*traffic_light*')
+        lights_list = self._world.get_actors().filter("*traffic_light*")
         is_light_red, _ = agent._is_light_red(lights_list)
 
         return is_light_red
@@ -158,19 +167,20 @@ class PointGoalSuite(BaseSuite):
         super()._setup_sensors()
 
         if self.viz_camera:
-            viz_camera_bp = self._blueprints.find('sensor.camera.rgb')
+            viz_camera_bp = self._blueprints.find("sensor.camera.rgb")
             viz_camera = self._world.spawn_actor(
                 viz_camera_bp,
                 carla.Transform(carla.Location(x=-5.5, z=2.8), carla.Rotation(pitch=-15)),
-                attach_to=self._player)
-            viz_camera_bp.set_attribute('image_size_x', '640')
-            viz_camera_bp.set_attribute('image_size_y', '480')
+                attach_to=self._player,
+            )
+            viz_camera_bp.set_attribute("image_size_x", "640")
+            viz_camera_bp.set_attribute("image_size_y", "480")
 
             # Set camera queues
             self._viz_queue = queue.Queue()
             viz_camera.listen(self._viz_queue.put)
 
-            self._actor_dict['sensor'].append(viz_camera)
+            self._actor_dict["sensor"].append(viz_camera)
 
     def render_world(self):
         import matplotlib.pyplot as plt
@@ -179,7 +189,7 @@ class PointGoalSuite(BaseSuite):
 
         plt.clf()
         plt.tight_layout()
-        plt.axis('off')
+        plt.axis("off")
 
         fig, ax = plt.subplots(1, 1)
         ax.get_xaxis().set_visible(False)
@@ -198,15 +208,15 @@ class PointGoalSuite(BaseSuite):
             pixel_x, pixel_y = self.world_to_pixel(node.transform.location)
 
             if command != prev_command and prev_command != -1:
-                _command = {1: 'L', 2: 'R', 3: 'S', 4: 'F'}.get(command, '???')
-                ax.text(pixel_x, pixel_y, _command, fontsize=8, color='black')
-                ax.add_patch(Circle((pixel_x, pixel_y), 5, color='black'))
-            elif i == 0 or i == len(self._local_planner._route)-1:
-                text = 'start' if i == 0 else 'end'
-                ax.text(pixel_x, pixel_y, text, fontsize=8, color='blue')
-                ax.add_patch(Circle((pixel_x, pixel_y), 5, color='blue'))
+                _command = {1: "L", 2: "R", 3: "S", 4: "F"}.get(command, "???")
+                ax.text(pixel_x, pixel_y, _command, fontsize=8, color="black")
+                ax.add_patch(Circle((pixel_x, pixel_y), 5, color="black"))
+            elif i == 0 or i == len(self._local_planner._route) - 1:
+                text = "start" if i == 0 else "end"
+                ax.text(pixel_x, pixel_y, text, fontsize=8, color="blue")
+                ax.add_patch(Circle((pixel_x, pixel_y), 5, color="blue"))
             elif i % (len(self._local_planner._route) // 10) == 0:
-                ax.add_patch(Circle((pixel_x, pixel_y), 3, color='red'))
+                ax.add_patch(Circle((pixel_x, pixel_y), 3, color="red"))
 
             prev_command = int(command)
 

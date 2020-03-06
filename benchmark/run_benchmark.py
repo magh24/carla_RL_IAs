@@ -1,9 +1,5 @@
-from pathlib import Path
-
 import pandas as pd
-import numpy as np
 import tqdm
-import time
 
 import bird_view.utils.carla_utils as cu
 
@@ -17,28 +13,30 @@ def run_single(env, weather, start, target, agent_maker, seed):
 
     diagnostics = list()
     result = {
-            'weather': weather,
-            'start': start, 'target': target,
-            'success': None, 't': None,
-            'total_lights_ran': None,
-            'total_lights': None,
-            'collided': None,
-            }
+        "weather": weather,
+        "start": start,
+        "target": target,
+        "success": None,
+        "t": None,
+        "total_lights_ran": None,
+        "total_lights": None,
+        "collided": None,
+    }
 
     while env.tick():
         observations = env.get_observations()
         control = agent.run_step(observations)
         diagnostic = env.apply_control(control)
 
-        diagnostic.pop('viz_img')
+        diagnostic.pop("viz_img")
         diagnostics.append(diagnostic)
 
         if env.is_failure() or env.is_success():
-            result['success'] = env.is_success()
-            result['total_lights_ran'] = env.traffic_tracker.total_lights_ran
-            result['total_lights'] = env.traffic_tracker.total_lights
-            result['collided'] = env.collided
-            result['t'] = env._tick
+            result["success"] = env.is_success()
+            result["total_lights_ran"] = env.traffic_tracker.total_lights_ran
+            result["total_lights"] = env.traffic_tracker.total_lights
+            result["collided"] = env.collided
+            result["t"] = env._tick
             break
 
     return result, diagnostics
@@ -48,8 +46,8 @@ def run_benchmark(agent_maker, env, benchmark_dir, seed, resume, max_run=5):
     """
     benchmark_dir must be an instance of pathlib.Path
     """
-    summary_csv = benchmark_dir / 'summary.csv'
-    diagnostics_dir = benchmark_dir / 'diagnostics'
+    summary_csv = benchmark_dir / "summary.csv"
+    diagnostics_dir = benchmark_dir / "diagnostics"
     diagnostics_dir.mkdir(parents=True, exist_ok=True)
 
     summary = list()
@@ -63,14 +61,19 @@ def run_benchmark(agent_maker, env, benchmark_dir, seed, resume, max_run=5):
     num_run = 0
 
     for weather, (start, target), run_name in tqdm.tqdm(env.all_tasks, total=total):
-        if resume and len(summary) > 0 and ((summary['start'] == start) \
-                       & (summary['target'] == target) \
-                       & (summary['weather'] == weather)).any():
-            print (weather, start, target)
+        if (
+            resume
+            and len(summary) > 0
+            and (
+                (summary["start"] == start)
+                & (summary["target"] == target)
+                & (summary["weather"] == weather)
+            ).any()
+        ):
+            print(weather, start, target)
             continue
 
-
-        diagnostics_csv = str(diagnostics_dir / ('%s.csv' % run_name))
+        diagnostics_csv = str(diagnostics_dir / ("%s.csv" % run_name))
 
         result, diagnostics = run_single(env, weather, start, target, agent_maker, seed)
 

@@ -18,7 +18,7 @@ class Test_GlobalRoutePlanner(unittest.TestCase):
         self.simple_grp = GlobalRoutePlanner(None)
 
         # == Integration test instance == #
-        client = carla.Client('localhost', 2000)
+        client = carla.Client("localhost", 2000)
         world = client.get_world()
         integ_dao = GlobalRoutePlannerDAO(world.get_map())
         self.integ_grp = GlobalRoutePlanner(integ_dao)
@@ -38,8 +38,16 @@ class Test_GlobalRoutePlanner(unittest.TestCase):
         """
         plan = self.integ_grp.plan_route((-60, -5), (-77.65, 72.72))
         self.assertEqual(
-            plan, [NavEnum.START, NavEnum.LEFT, NavEnum.LEFT,
-                   NavEnum.GO_STRAIGHT, NavEnum.LEFT, NavEnum.STOP])
+            plan,
+            [
+                NavEnum.START,
+                NavEnum.LEFT,
+                NavEnum.LEFT,
+                NavEnum.GO_STRAIGHT,
+                NavEnum.LEFT,
+                NavEnum.STOP,
+            ],
+        )
 
     def test_path_search(self):
         """
@@ -49,7 +57,8 @@ class Test_GlobalRoutePlanner(unittest.TestCase):
         self.integ_grp.path_search((191.947, -5.602), (78.730, -50.091))
         self.assertEqual(
             self.integ_grp.path_search((196.947, -5.602), (78.730, -50.091)),
-            [256, 157, 158, 117, 118, 59, 55, 230])
+            [256, 157, 158, 117, 118, 59, 55, 230],
+        )
 
     def test_localise(self):
         """
@@ -58,8 +67,8 @@ class Test_GlobalRoutePlanner(unittest.TestCase):
         """
         x, y = (200, -250)
         segment = self.integ_grp.localise(x, y)
-        self.assertEqual(self.integ_grp._id_map[segment['entry']], 5)
-        self.assertEqual(self.integ_grp._id_map[segment['exit']], 225)
+        self.assertEqual(self.integ_grp._id_map[segment["entry"]], 5)
+        self.assertEqual(self.integ_grp._id_map[segment["exit"]], 225)
 
     def test_unit_vector(self):
         """
@@ -83,16 +92,16 @@ def suite():
     """
 
     suite = unittest.TestSuite()
-    suite.addTest(Test_GlobalRoutePlanner('test_unit_vector'))
-    suite.addTest(Test_GlobalRoutePlanner('test_dot'))
-    suite.addTest(Test_GlobalRoutePlanner('test_localise'))
-    suite.addTest(Test_GlobalRoutePlanner('test_path_search'))
-    suite.addTest(Test_GlobalRoutePlanner('test_plan_route'))
+    suite.addTest(Test_GlobalRoutePlanner("test_unit_vector"))
+    suite.addTest(Test_GlobalRoutePlanner("test_dot"))
+    suite.addTest(Test_GlobalRoutePlanner("test_localise"))
+    suite.addTest(Test_GlobalRoutePlanner("test_path_search"))
+    suite.addTest(Test_GlobalRoutePlanner("test_plan_route"))
 
     return suite
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     """
     Running test suite
     """

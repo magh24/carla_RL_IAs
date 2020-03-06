@@ -43,23 +43,18 @@ def get_speed(vehicle):
 
 
 def compute_yaw_difference(yaw1, yaw2):
-    u = np.array([
-        math.cos(math.radians(yaw1)),
-        math.sin(math.radians(yaw1)),
-    ])
+    u = np.array([math.cos(math.radians(yaw1)), math.sin(math.radians(yaw1)), ])
 
-    v = np.array([
-        math.cos(math.radians(yaw2)),
-        math.sin(math.radians(yaw2)),
-    ])
-
+    v = np.array([math.cos(math.radians(yaw2)), math.sin(math.radians(yaw2)), ])
 
     angle = math.degrees(math.acos(np.clip(np.dot(u, v), -1, 1)))
 
     return angle
 
 
-def is_within_distance_ahead(target_location, current_location, orientation, max_distance, degree=60):
+def is_within_distance_ahead(
+    target_location, current_location, orientation, max_distance, degree=60
+):
     """
     Check if a target object is within a certain distance in front of a reference object.
 
@@ -69,17 +64,13 @@ def is_within_distance_ahead(target_location, current_location, orientation, max
     :param max_distance: maximum allowed distance
     :return: True if target object is within max_distance ahead of the reference object
     """
-    u = np.array([
-        target_location.x - current_location.x,
-        target_location.y - current_location.y])
+    u = np.array([target_location.x - current_location.x, target_location.y - current_location.y])
     distance = np.linalg.norm(u)
 
     if distance > max_distance:
         return False
 
-    v = np.array([
-        math.cos(math.radians(orientation)),
-        math.sin(math.radians(orientation))])
+    v = np.array([math.cos(math.radians(orientation)), math.sin(math.radians(orientation))])
 
     angle = math.degrees(math.acos(np.dot(u, v) / distance))
 
@@ -95,10 +86,14 @@ def compute_magnitude_angle(target_location, current_location, orientation):
     :param orientation: orientation of the reference object
     :return: a tuple composed by the distance to the object and the angle between both objects
     """
-    target_vector = np.array([target_location.x - current_location.x, target_location.y - current_location.y])
+    target_vector = np.array(
+        [target_location.x - current_location.x, target_location.y - current_location.y]
+    )
     norm_target = np.linalg.norm(target_vector)
 
-    forward_vector = np.array([math.cos(math.radians(orientation)), math.sin(math.radians(orientation))])
+    forward_vector = np.array(
+        [math.cos(math.radians(orientation)), math.sin(math.radians(orientation))]
+    )
     d_angle = math.degrees(math.acos(np.dot(forward_vector, target_vector) / norm_target))
 
     return (norm_target, d_angle)
@@ -111,14 +106,15 @@ def distance_vehicle(waypoint, vehicle_transform):
 
     return math.sqrt(dx * dx + dy * dy)
 
+
 def vector(location_1, location_2):
-        """
+    """
         Returns the unit vector from location_1 to location_2
         location_1, location_2    :   carla.Location objects
         """
-        x = location_2.x - location_1.x
-        y = location_2.y - location_1.y
-        z = location_2.z - location_1.z
-        norm = np.linalg.norm([x, y, z])
+    x = location_2.x - location_1.x
+    y = location_2.y - location_1.y
+    z = location_2.z - location_1.z
+    norm = np.linalg.norm([x, y, z])
 
-        return [x/norm, y/norm, z/norm]
+    return [x / norm, y / norm, z / norm]

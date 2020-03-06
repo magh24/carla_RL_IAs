@@ -6,7 +6,8 @@
 # This work is licensed under the terms of the MIT license.
 # For a copy, see <https://opensource.org/licenses/MIT>.
 
-""" This module implements an agent that roams around a track following random waypoints and avoiding other vehicles.
+""" This module implements an agent that roams around a track following
+random waypoints and avoiding other vehicles.
 The agent also responds to traffic lights. """
 
 from agents.navigation.agent import Agent, AgentState
@@ -51,7 +52,7 @@ class RoamingAgent(Agent):
         vehicle_state, vehicle = self._is_vehicle_hazard(vehicle_list)
         if vehicle_state:
             if debug:
-                print('!!! VEHICLE BLOCKING AHEAD [{}])'.format(vehicle.id))
+                print("!!! VEHICLE BLOCKING AHEAD [{}])".format(vehicle.id))
 
             self._state = AgentState.BLOCKED_BY_VEHICLE
             hazard_detected = True
@@ -60,7 +61,7 @@ class RoamingAgent(Agent):
         light_state, traffic_light = self._is_light_red(lights_list)
         if light_state:
             if debug:
-                print('=== RED LIGHT AHEAD [{}])'.format(traffic_light.id))
+                print("=== RED LIGHT AHEAD [{}])".format(traffic_light.id))
 
             self._state = AgentState.BLOCKED_RED_LIGHT
             hazard_detected = True

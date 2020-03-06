@@ -17,6 +17,7 @@ from agents.navigation.local_planner import LocalPlanner
 from agents.navigation.global_route_planner import GlobalRoutePlanner
 from agents.navigation.global_route_planner_dao import GlobalRoutePlannerDAO
 
+
 class BasicAgent(Agent):
     """
     BasicAgent implements a basic agent that navigates scenes to reach a given
@@ -32,14 +33,11 @@ class BasicAgent(Agent):
 
         self._proximity_threshold = 10.0  # meters
         self._state = AgentState.NAVIGATING
-        args_lateral_dict = {
-            'K_P': 1,
-            'K_D': 0.02,
-            'K_I': 0,
-            'dt': 1.0/20.0}
+        args_lateral_dict = {"K_P": 1, "K_D": 0.02, "K_I": 0, "dt": 1.0 / 20.0}
         self._local_planner = LocalPlanner(
-            self._vehicle, opt_dict={'target_speed' : target_speed,
-            'lateral_control_dict':args_lateral_dict})
+            self._vehicle,
+            opt_dict={"target_speed": target_speed, "lateral_control_dict": args_lateral_dict},
+        )
         self._hop_resolution = 2.0
         self._path_seperation_hop = 2
         self._path_seperation_threshold = 0.5
@@ -54,7 +52,8 @@ class BasicAgent(Agent):
 
         start_waypoint = self._map.get_waypoint(self._vehicle.get_location())
         end_waypoint = self._map.get_waypoint(
-            carla.Location(location[0], location[1], location[2]))
+            carla.Location(location[0], location[1], location[2])
+        )
 
         route_trace = self._trace_route(start_waypoint, end_waypoint)
         assert route_trace
@@ -76,8 +75,8 @@ class BasicAgent(Agent):
 
         # Obtain route plan
         route = self._grp.trace_route(
-            start_waypoint.transform.location,
-            end_waypoint.transform.location)
+            start_waypoint.transform.location, end_waypoint.transform.location
+        )
 
         return route
 
@@ -96,13 +95,13 @@ class BasicAgent(Agent):
         vehicle_list = actor_list.filter("*vehicle*")
         lights_list = actor_list.filter("*traffic_light*")
         # import pdb; pdb.set_trace()
-        print (actor_list)
+        print(actor_list)
 
         # check possible obstacles
         vehicle_state, vehicle = self._is_vehicle_hazard(vehicle_list)
         if vehicle_state:
             if debug:
-                print('!!! VEHICLE BLOCKING AHEAD [{}])'.format(vehicle.id))
+                print("!!! VEHICLE BLOCKING AHEAD [{}])".format(vehicle.id))
 
             self._state = AgentState.BLOCKED_BY_VEHICLE
             hazard_detected = True
@@ -111,7 +110,7 @@ class BasicAgent(Agent):
         light_state, traffic_light = self._is_light_red(lights_list)
         if light_state:
             if debug:
-                print('=== RED LIGHT AHEAD [{}])'.format(traffic_light.id))
+                print("=== RED LIGHT AHEAD [{}])".format(traffic_light.id))
 
             self._state = AgentState.BLOCKED_RED_LIGHT
             hazard_detected = True

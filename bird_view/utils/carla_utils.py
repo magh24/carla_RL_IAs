@@ -33,43 +33,42 @@ PRESET_WEATHERS = {
 }
 
 TRAIN_WEATHERS = {
-        'clear_noon': WeatherParameters.ClearNoon, #1
-        'wet_noon': WeatherParameters.WetNoon, #3
-        'hardrain_noon': WeatherParameters.HardRainNoon, #6
-        'clear_sunset': WeatherParameters.ClearSunset, #8
-        }
+    "clear_noon": WeatherParameters.ClearNoon,  # 1
+    "wet_noon": WeatherParameters.WetNoon,  # 3
+    "hardrain_noon": WeatherParameters.HardRainNoon,  # 6
+    "clear_sunset": WeatherParameters.ClearSunset,  # 8
+}
 
 WEATHERS = list(TRAIN_WEATHERS.values())
 
 
 BACKGROUND = [0, 47, 0]
 COLORS = [
-        (102, 102, 102),
-        (253, 253, 17),
-        (204, 6, 5),
-        (250, 210, 1),
-        (39, 232, 51),
-        (0, 0, 142),
-        (220, 20, 60)
-        ]
+    (102, 102, 102),
+    (253, 253, 17),
+    (204, 6, 5),
+    (250, 210, 1),
+    (39, 232, 51),
+    (0, 0, 142),
+    (220, 20, 60),
+]
 
 
-TOWNS = ['Town01', 'Town02', 'Town03', 'Town04']
-#VEHICLE_NAME = 'vehicle.ford.mustang'
+TOWNS = ["Town01", "Town02", "Town03", "Town04"]
+# VEHICLE_NAME = 'vehicle.ford.mustang'
 VEHICLE_NAME = "*lincoln*"
 
-def is_within_distance_ahead(target_location, current_location, orientation, max_distance, degree=60):
-    u = np.array([
-        target_location.x - current_location.x,
-        target_location.y - current_location.y])
+
+def is_within_distance_ahead(
+    target_location, current_location, orientation, max_distance, degree=60
+):
+    u = np.array([target_location.x - current_location.x, target_location.y - current_location.y])
     distance = np.linalg.norm(u)
 
     if distance > max_distance:
         return False
 
-    v = np.array([
-        math.cos(math.radians(orientation)),
-        math.sin(math.radians(orientation))])
+    v = np.array([math.cos(math.radians(orientation)), math.sin(math.radians(orientation))])
 
     angle = math.degrees(math.acos(np.dot(u, v) / distance))
 
@@ -89,23 +88,23 @@ def set_sync_mode(client, sync):
 def carla_img_to_np(carla_img):
     carla_img.convert(ColorConverter.Raw)
 
-    img = np.frombuffer(carla_img.raw_data, dtype=np.dtype('uint8'))
+    img = np.frombuffer(carla_img.raw_data, dtype=np.dtype("uint8"))
     img = np.reshape(img, (carla_img.height, carla_img.width, 4))
-    img = img[:,:,:3]
-    img = img[:,:,::-1]
+    img = img[:, :, :3]
+    img = img[:, :, ::-1]
 
     return img
 
 
 def get_birdview(observations):
     birdview = [
-            observations['road'],
-            observations['lane'],
-            observations['traffic'],
-            observations['vehicle'],
-            observations['pedestrian']
-            ]
-    birdview = [x if x.ndim == 3 else x[...,None] for x in birdview]
+        observations["road"],
+        observations["lane"],
+        observations["traffic"],
+        observations["vehicle"],
+        observations["pedestrian"],
+    ]
+    birdview = [x if x.ndim == 3 else x[..., None] for x in birdview]
     birdview = np.concatenate(birdview, 2)
 
     return birdview
@@ -113,31 +112,31 @@ def get_birdview(observations):
 
 def process(observations):
     result = dict()
-    result['rgb'] = observations['rgb'].copy()
-    result['birdview'] = observations['birdview'].copy()
-    result['collided'] = observations['collided']
+    result["rgb"] = observations["rgb"].copy()
+    result["birdview"] = observations["birdview"].copy()
+    result["collided"] = observations["collided"]
 
-    control = observations['control']
+    control = observations["control"]
     control = [control.steer, control.throttle, control.brake]
 
-    result['control'] = np.float32(control)
+    result["control"] = np.float32(control)
 
     measurements = [
-            observations['position'],
-            observations['orientation'],
-            observations['velocity'],
-            observations['acceleration'],
-            observations['command'].value,
-            observations['control'].steer,
-            observations['control'].throttle,
-            observations['control'].brake,
-            observations['control'].manual_gear_shift,
-            observations['control'].gear
-            ]
+        observations["position"],
+        observations["orientation"],
+        observations["velocity"],
+        observations["acceleration"],
+        observations["command"].value,
+        observations["control"].steer,
+        observations["control"].throttle,
+        observations["control"].brake,
+        observations["control"].manual_gear_shift,
+        observations["control"].gear,
+    ]
     measurements = [x if isinstance(x, np.ndarray) else np.float32([x]) for x in measurements]
     measurements = np.concatenate(measurements, 0)
 
-    result['measurements'] = measurements
+    result["measurements"] = measurements
 
     return result
 
@@ -157,7 +156,7 @@ def visualize_birdview(birdview):
     canvas[...] = BACKGROUND
 
     for i in range(len(COLORS)):
-        canvas[birdview[:,:,i] > 0] = COLORS[i]
+        canvas[birdview[:, :, i] > 0] = COLORS[i]
 
     return canvas
 
@@ -173,19 +172,27 @@ def visualize_predicted_birdview(predicted, tau=0.5):
 
 
 class PedestrianTracker(object):
-    def __init__(self, wrapper, peds, ped_controllers, respawn_peds=True, speed_threshold=0.1, stuck_limit=20):
+    def __init__(
+        self,
+        wrapper,
+        peds,
+        ped_controllers,
+        respawn_peds=True,
+        speed_threshold=0.1,
+        stuck_limit=20,
+    ):
         self._wrapper = wrapper()
         self._peds = peds
         self._ped_controllers = ped_controllers
-        
+
         self._ped_timers = dict()
         for ped in peds:
             self._ped_timers[ped.id] = 0
-        
+
         self._speed_threshold = speed_threshold
         self._stuck_limit = stuck_limit
         self._respawn_peds = respawn_peds
-            
+
     def tick(self):
         for ped in self._peds:
             vel = ped.get_velocity()
@@ -195,7 +202,7 @@ class PedestrianTracker(object):
                 self._ped_timers[ped.id] += 1
             else:
                 self._ped_timers[ped.id] = 0
-        
+
         stuck_ped_ids = []
         for ped_id, stuck_time in self._ped_timers.items():
             if stuck_time >= self._stuck_limit and self._respawn_peds:
@@ -207,7 +214,7 @@ class PedestrianTracker(object):
             ped_id = ped_controller.parent.id
             if ped_id not in stuck_ped_ids:
                 continue
-            
+
             self._ped_timers.pop(ped_id)
 
             old_loc = ped.get_location()
@@ -215,14 +222,17 @@ class PedestrianTracker(object):
             loc = None
             while True:
                 _loc = self._wrapper._world.get_random_location_from_navigation()
-                if _loc is not None and _loc.distance(ego_vehicle_location) >= 10.0 \
-                                    and _loc.distance(old_loc) >= 10.0:
+                if (
+                    _loc is not None
+                    and _loc.distance(ego_vehicle_location) >= 10.0
+                    and _loc.distance(old_loc) >= 10.0
+                ):
                     loc = _loc
                     break
-            
+
             ped_controller.teleport_to_location(loc)
-            print ("Teleported walker %d to %s"%(ped_id, loc))
-        
+            print("Teleported walker %d to %s" % (ped_id, loc))
+
 
 class TrafficTracker(object):
     LANE_WIDTH = 5.0
@@ -237,7 +247,7 @@ class TrafficTracker(object):
         self.total_lights_ran = 0
         self.total_lights = 0
         self.ran_light = False
-        
+
         self.last_light_id = -1
 
     def tick(self):
@@ -249,12 +259,11 @@ class TrafficTracker(object):
             return
 
         light = TrafficTracker.get_active_light(self._agent, self._world)
-        active_light = light
-        
+
         if light is not None and light.id != self.last_light_id:
             self.total_lights += 1
             self.last_light_id = light.id
-            
+
         light = TrafficTracker.get_closest_light(self._agent, self._world)
 
         if light is None or light.state != carla.libcarla.TrafficLightState.Red:
@@ -275,14 +284,13 @@ class TrafficTracker(object):
             self.ran_light = True
             self.total_lights_ran += 1
 
-
     @staticmethod
     def get_closest_light(agent, world):
         location = agent.get_location()
         closest = None
-        closest_distance = float('inf')
+        closest_distance = float("inf")
 
-        for light in world.get_actors().filter('*traffic_light*'):
+        for light in world.get_actors().filter("*traffic_light*"):
             delta = location - light.get_transform().location
             distance = np.sqrt(sum([delta.x ** 2, delta.y ** 2, delta.z ** 2]))
 
@@ -294,27 +302,29 @@ class TrafficTracker(object):
 
     @staticmethod
     def get_active_light(ego_vehicle, world):
-        
+
         _map = world.get_map()
         ego_vehicle_location = ego_vehicle.get_location()
         ego_vehicle_waypoint = _map.get_waypoint(ego_vehicle_location)
-        
-        lights_list = world.get_actors().filter('*traffic_light*')
-        
+
+        lights_list = world.get_actors().filter("*traffic_light*")
+
         for traffic_light in lights_list:
             location = traffic_light.get_location()
             object_waypoint = _map.get_waypoint(location)
-            
+
             if object_waypoint.road_id != ego_vehicle_waypoint.road_id:
                 continue
             if object_waypoint.lane_id != ego_vehicle_waypoint.lane_id:
                 continue
-            
+
             if not is_within_distance_ahead(
-                    location,
-                    ego_vehicle_location,
-                    ego_vehicle.get_transform().rotation.yaw,
-                    10., degree=60):
+                location,
+                ego_vehicle_location,
+                ego_vehicle.get_transform().rotation.yaw,
+                10.0,
+                degree=60,
+            ):
                 continue
 
             return traffic_light
@@ -340,14 +350,22 @@ class TrafficTracker(object):
 
 class CarlaWrapper(object):
     def __init__(
-            self, town='Town01', vehicle_name=VEHICLE_NAME, port=2000, client=None,
-            col_threshold=400, seed=None, respawn_peds=True, **kwargs):
-        
-        if client is None:    
-            self._client = carla.Client('localhost', port)
+        self,
+        town="Town01",
+        vehicle_name=VEHICLE_NAME,
+        port=2000,
+        client=None,
+        col_threshold=400,
+        seed=None,
+        respawn_peds=True,
+        **kwargs
+    ):
+
+        if client is None:
+            self._client = carla.Client("localhost", port)
         else:
             self._client = client
-            
+
         self._client.set_timeout(30.0)
 
         set_sync_mode(self._client, False)
@@ -358,7 +376,7 @@ class CarlaWrapper(object):
 
         self._blueprints = self._world.get_blueprint_library()
         self._vehicle_bp = np.random.choice(self._blueprints.filter(vehicle_name))
-        self._vehicle_bp.set_attribute('role_name', 'hero')
+        self._vehicle_bp.set_attribute("role_name", "hero")
 
         self._tick = 0
         self._player = None
@@ -380,32 +398,33 @@ class CarlaWrapper(object):
 
         self._rgb_queue = None
         self.rgb_image = None
-        
+
         self.seed = seed
 
         self._respawn_peds = respawn_peds
         self.disable_two_wheels = False
-        
 
     def spawn_vehicles(self):
 
-        blueprints = self._blueprints.filter('vehicle.*')
+        blueprints = self._blueprints.filter("vehicle.*")
         if self.disable_two_wheels:
-            blueprints = [x for x in blueprints if int(x.get_attribute('number_of_wheels')) == 4]
+            blueprints = [x for x in blueprints if int(x.get_attribute("number_of_wheels")) == 4]
         spawn_points = self._map.get_spawn_points()
 
         for i in range(self.n_vehicles):
             blueprint = np.random.choice(blueprints)
-            blueprint.set_attribute('role_name', 'autopilot')
-    
-            if blueprint.has_attribute('color'):
-                color = np.random.choice(blueprint.get_attribute('color').recommended_values)
-                blueprint.set_attribute('color', color)
+            blueprint.set_attribute("role_name", "autopilot")
 
-            if blueprint.has_attribute('driver_id'):
-                driver_id = np.random.choice(blueprint.get_attribute('driver_id').recommended_values)
-                blueprint.set_attribute('driver_id', driver_id)
-            
+            if blueprint.has_attribute("color"):
+                color = np.random.choice(blueprint.get_attribute("color").recommended_values)
+                blueprint.set_attribute("color", color)
+
+            if blueprint.has_attribute("driver_id"):
+                driver_id = np.random.choice(
+                    blueprint.get_attribute("driver_id").recommended_values
+                )
+                blueprint.set_attribute("driver_id", driver_id)
+
             vehicle = None
             while vehicle is None:
                 vehicle = self._world.try_spawn_actor(blueprint, np.random.choice(spawn_points))
@@ -413,66 +432,68 @@ class CarlaWrapper(object):
             vehicle.set_autopilot(True)
             vehicle.start_dtcrowd()
 
-            self._actor_dict['vehicle'].append(vehicle)
+            self._actor_dict["vehicle"].append(vehicle)
 
-        print ("spawned %d vehicles"%len(self._actor_dict['vehicle']))
+        print("spawned %d vehicles" % len(self._actor_dict["vehicle"]))
 
     def spawn_pedestrians(self, n_pedestrians):
         SpawnActor = carla.command.SpawnActor
 
         peds_spawned = 0
-        
+
         walkers = []
         controllers = []
-        
+
         while peds_spawned < n_pedestrians:
             spawn_points = []
             _walkers = []
             _controllers = []
-            
+
             for i in range(n_pedestrians - peds_spawned):
                 spawn_point = carla.Transform()
                 loc = self._world.get_random_location_from_navigation()
-    
+
                 if loc is not None:
                     spawn_point.location = loc
                     spawn_points.append(spawn_point)
-    
-            blueprints = self._blueprints.filter('walker.pedestrian.*')
+
+            blueprints = self._blueprints.filter("walker.pedestrian.*")
             batch = []
             for spawn_point in spawn_points:
                 walker_bp = random.choice(blueprints)
-    
-                if walker_bp.has_attribute('is_invincible'):
-                    walker_bp.set_attribute('is_invincible', 'false')
-    
+
+                if walker_bp.has_attribute("is_invincible"):
+                    walker_bp.set_attribute("is_invincible", "false")
+
                 batch.append(SpawnActor(walker_bp, spawn_point))
-    
+
             for result in self._client.apply_batch_sync(batch, True):
                 if result.error:
                     print(result.error)
                 else:
                     peds_spawned += 1
                     _walkers.append(result.actor_id)
-    
-            walker_controller_bp = self._blueprints.find('controller.ai.walker')
-            batch = [SpawnActor(walker_controller_bp, carla.Transform(), walker) for walker in _walkers]
-    
+
+            walker_controller_bp = self._blueprints.find("controller.ai.walker")
+            batch = [
+                SpawnActor(walker_controller_bp, carla.Transform(), walker) for walker in _walkers
+            ]
+
             for result in self._client.apply_batch_sync(batch, True):
                 if result.error:
                     print(result.error)
                 else:
                     _controllers.append(result.actor_id)
-                    
+
             controllers.extend(_controllers)
             walkers.extend(_walkers)
 
-        print ("spawned %d pedestrians"%len(controllers))
+        print("spawned %d pedestrians" % len(controllers))
 
         return self._world.get_actors(walkers), self._world.get_actors(controllers)
-        
+
     def set_weather(self, weather_string):
-        if weather_string == 'random':
+        if weather_string == "random":
             weather = np.random.choice(WEATHERS)
         elif weather_string in TRAIN_WEATHERS:
             weather = TRAIN_WEATHERS[weather_string]
@@ -482,35 +503,40 @@ class CarlaWrapper(object):
         self.weather = weather
         self._world.set_weather(weather)
 
-    def init(self, start=0, weather='random', n_vehicles=0, n_pedestrians=0):
+    def init(self, start=0, weather="random", n_vehicles=0, n_pedestrians=0):
         while True:
             self.n_vehicles = n_vehicles or self.n_vehicles
             self.n_pedestrians = n_pedestrians or self.n_pedestrians
             self._start_pose = self._map.get_spawn_points()[start]
-    
+
             self.clean_up()
             self.spawn_player()
             self._setup_sensors()
-    
+
             # Hiding away the gore.
             map_utils.init(self._client, self._world, self._map, self._player)
-    
+
             # Deterministic.
             if self.seed is not None:
                 np.random.seed(self.seed)
-    
+
             self.set_weather(weather)
-            
+
             # Spawn vehicles
             self.spawn_vehicles()
-            
+
             # Spawn pedestrians
             peds, ped_controllers = self.spawn_pedestrians(self.n_pedestrians)
-            self._actor_dict['pedestrian'].extend(peds)
-            self._actor_dict['ped_controller'].extend(ped_controllers)
-            
-            self.peds_tracker = PedestrianTracker(weakref.ref(self), self.pedestrians, self.ped_controllers, respawn_peds=self._respawn_peds)
-    
+            self._actor_dict["pedestrian"].extend(peds)
+            self._actor_dict["ped_controller"].extend(ped_controllers)
+
+            self.peds_tracker = PedestrianTracker(
+                weakref.ref(self),
+                self.pedestrians,
+                self.ped_controllers,
+                respawn_peds=self._respawn_peds,
+            )
+
             self.traffic_tracker = TrafficTracker(self._player, self._world)
 
             ready = self.ready()
@@ -521,18 +547,17 @@ class CarlaWrapper(object):
         self._player = self._world.spawn_actor(self._vehicle_bp, self._start_pose)
         self._player.set_autopilot(False)
         self._player.start_dtcrowd()
-        self._actor_dict['player'].append(self._player)
-        
+        self._actor_dict["player"].append(self._player)
 
     def ready(self, ticks=50):
         self.tick()
         self.get_observations()
 
-        for controller in self._actor_dict['ped_controller']:
+        for controller in self._actor_dict["ped_controller"]:
             controller.start()
             controller.go_to_location(self._world.get_random_location_from_navigation())
             controller.set_max_speed(1 + random.random())
-        
+
         for _ in range(ticks):
             self.tick()
             self.get_observations()
@@ -542,9 +567,9 @@ class CarlaWrapper(object):
 
         self._time_start = time.time()
         self._tick = 0
-        
-        print ("Initial collided: %s"%self.collided)
-        
+
+        print("Initial collided: %s" % self.collided)
+
         return not self.collided
 
     def tick(self):
@@ -566,12 +591,13 @@ class CarlaWrapper(object):
     def get_observations(self):
         result = dict()
         result.update(map_utils.get_observations())
-        # print ("%.3f, %.3f"%(self.rgb_image.timestamp, self._world.get_snapshot().timestamp.elapsed_seconds))
-        result.update({
-            'rgb': carla_img_to_np(self.rgb_image),
-            'birdview': get_birdview(result),
-            'collided': self.collided
-            })
+        result.update(
+            {
+                "rgb": carla_img_to_np(self.rgb_image),
+                "birdview": get_birdview(result),
+                "collided": self.collided,
+            }
+        )
 
         return result
 
@@ -583,31 +609,33 @@ class CarlaWrapper(object):
             self._player.apply_control(control)
 
         return {
-                't': self._tick,
-                'wall': time.time() - self._time_start,
-                'ran_light': self.traffic_tracker.ran_light
-                }
+            "t": self._tick,
+            "wall": time.time() - self._time_start,
+            "ran_light": self.traffic_tracker.ran_light,
+        }
 
     def clean_up(self):
-        for vehicle in self._actor_dict['vehicle']:
+        for vehicle in self._actor_dict["vehicle"]:
             # continue
             vehicle.stop_dtcrowd()
-        
-        for controller in self._actor_dict['ped_controller']:
+
+        for controller in self._actor_dict["ped_controller"]:
             controller.stop()
 
-        for sensor in self._actor_dict['sensor']:
+        for sensor in self._actor_dict["sensor"]:
             sensor.destroy()
 
         for actor_type in list(self._actor_dict.keys()):
-            self._client.apply_batch([carla.command.DestroyActor(x) for x in self._actor_dict[actor_type]])
+            self._client.apply_batch(
+                [carla.command.DestroyActor(x) for x in self._actor_dict[actor_type]]
+            )
             self._actor_dict[actor_type].clear()
 
         self._actor_dict.clear()
 
         self._tick = 0
         self._time_start = time.time()
-        
+
         if self._player:
             self._player.stop_dtcrowd()
         self._player = None
@@ -616,15 +644,14 @@ class CarlaWrapper(object):
         if self._rgb_queue:
             with self._rgb_queue.mutex:
                 self._rgb_queue.queue.clear()
-    
+
     @property
     def pedestrians(self):
-        return self._actor_dict.get('pedestrian', [])
-        
+        return self._actor_dict.get("pedestrian", [])
+
     @property
     def ped_controllers(self):
-        return self._actor_dict.get('ped_controller', [])
-
+        return self._actor_dict.get("ped_controller", [])
 
     def _setup_sensors(self):
         """
@@ -632,48 +659,51 @@ class CarlaWrapper(object):
         """
         # Camera.
         self._rgb_queue = queue.Queue()
-            
-        rgb_camera_bp = self._blueprints.find('sensor.camera.rgb')
 
-        rgb_camera_bp.set_attribute('image_size_x', '288')
-        rgb_camera_bp.set_attribute('image_size_y', '288')
+        rgb_camera_bp = self._blueprints.find("sensor.camera.rgb")
+
+        rgb_camera_bp.set_attribute("image_size_x", "288")
+        rgb_camera_bp.set_attribute("image_size_y", "288")
         if self.crop_sky:
             # We used a FOV of 100 for the only town01 training (and we cropped sky)
-            rgb_camera_bp.set_attribute('fov', '100')
+            rgb_camera_bp.set_attribute("fov", "100")
         else:
             # We used a FOV of 90 for the CARLA challenge
-            rgb_camera_bp.set_attribute('fov', '90')
+            rgb_camera_bp.set_attribute("fov", "90")
         rgb_camera = self._world.spawn_actor(
             rgb_camera_bp,
             carla.Transform(carla.Location(x=1.5, z=2.4), carla.Rotation(pitch=0)),
-            attach_to=self._player)
+            attach_to=self._player,
+        )
 
         rgb_camera.listen(self._rgb_queue.put)
-        self._actor_dict['sensor'].append(rgb_camera)
-        
-        
+        self._actor_dict["sensor"].append(rgb_camera)
 
         # Collisions.
         self.collided = False
         self._collided_frame_number = -1
 
         collision_sensor = self._world.spawn_actor(
-                self._blueprints.find('sensor.other.collision'),
-                carla.Transform(), attach_to=self._player)
+            self._blueprints.find("sensor.other.collision"),
+            carla.Transform(),
+            attach_to=self._player,
+        )
         collision_sensor.listen(
-                lambda event: self.__class__._on_collision(weakref.ref(self), event))
-        self._actor_dict['sensor'].append(collision_sensor)
+            lambda event: self.__class__._on_collision(weakref.ref(self), event)
+        )
+        self._actor_dict["sensor"].append(collision_sensor)
 
         # Lane invasion.
         self.invaded = False
         self._invaded_frame_number = -1
 
         invasion_sensor = self._world.spawn_actor(
-                self._blueprints.find('sensor.other.lane_invasion'),
-                carla.Transform(), attach_to=self._player)
-        invasion_sensor.listen(
-                lambda event: self.__class__._on_invasion(weakref.ref(self), event))
-        self._actor_dict['sensor'].append(invasion_sensor)
+            self._blueprints.find("sensor.other.lane_invasion"),
+            carla.Transform(),
+            attach_to=self._player,
+        )
+        invasion_sensor.listen(lambda event: self.__class__._on_invasion(weakref.ref(self), event))
+        self._actor_dict["sensor"].append(invasion_sensor)
 
     @staticmethod
     def _on_collision(weakself, event):

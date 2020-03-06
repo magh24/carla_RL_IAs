@@ -18,10 +18,16 @@ import os
 import sys
 
 try:
-    sys.path.append(glob.glob('**/*%d.%d-%s.egg' % (
-        sys.version_info.major,
-        sys.version_info.minor,
-        'win-amd64' if os.name == 'nt' else 'linux-x86_64'))[0])
+    sys.path.append(
+        glob.glob(
+            "**/*%d.%d-%s.egg"
+            % (
+                sys.version_info.major,
+                sys.version_info.minor,
+                "win-amd64" if os.name == "nt" else "linux-x86_64",
+            )
+        )[0]
+    )
 except IndexError:
     pass
 
@@ -49,7 +55,7 @@ class Sun(object):
         self.altitude = 35.0 * (math.sin(self._t) + 1.0)
 
     def __str__(self):
-        return 'Sun(%.2f, %.2f)' % (self.azimuth, self.altitude)
+        return "Sun(%.2f, %.2f)" % (self.azimuth, self.altitude)
 
 
 class Storm(object):
@@ -75,7 +81,7 @@ class Storm(object):
             self._increasing = False
 
     def __str__(self):
-        return 'Storm(clouds=%d%%, rain=%d%%, wind=%d%%)' % (self.clouds, self.rain, self.wind)
+        return "Storm(clouds=%d%%, rain=%d%%, wind=%d%%)" % (self.clouds, self.rain, self.wind)
 
 
 class Weather(object):
@@ -95,29 +101,33 @@ class Weather(object):
         self.weather.sun_altitude_angle = self._sun.altitude
 
     def __str__(self):
-        return '%s %s' % (self._sun, self._storm)
+        return "%s %s" % (self._sun, self._storm)
 
 
 def main():
-    argparser = argparse.ArgumentParser(
-        description=__doc__)
+    argparser = argparse.ArgumentParser(description=__doc__)
     argparser.add_argument(
-        '--host',
-        metavar='H',
-        default='127.0.0.1',
-        help='IP of the host server (default: 127.0.0.1)')
+        "--host",
+        metavar="H",
+        default="127.0.0.1",
+        help="IP of the host server (default: 127.0.0.1)",
+    )
     argparser.add_argument(
-        '-p', '--port',
-        metavar='P',
+        "-p",
+        "--port",
+        metavar="P",
         default=2000,
         type=int,
-        help='TCP port to listen to (default: 2000)')
+        help="TCP port to listen to (default: 2000)",
+    )
     argparser.add_argument(
-        '-s', '--speed',
-        metavar='FACTOR',
+        "-s",
+        "--speed",
+        metavar="FACTOR",
         default=1.0,
         type=float,
-        help='rate at which the weather changes (default: 1.0)')
+        help="rate at which the weather changes (default: 1.0)",
+    )
     args = argparser.parse_args()
 
     speed_factor = args.speed
@@ -137,11 +147,11 @@ def main():
         if elapsed_time > update_freq:
             weather.tick(speed_factor * elapsed_time)
             world.set_weather(weather.weather)
-            sys.stdout.write('\r' + str(weather) + 12 * ' ')
+            sys.stdout.write("\r" + str(weather) + 12 * " ")
             sys.stdout.flush()
             elapsed_time = 0.0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     main()

@@ -11,27 +11,32 @@ import os
 import sys
 
 try:
-    sys.path.append(glob.glob('**/*%d.%d-%s.egg' % (
-        sys.version_info.major,
-        sys.version_info.minor,
-        'win-amd64' if os.name == 'nt' else 'linux-x86_64'))[0])
+    sys.path.append(
+        glob.glob(
+            "**/*%d.%d-%s.egg"
+            % (
+                sys.version_info.major,
+                sys.version_info.minor,
+                "win-amd64" if os.name == "nt" else "linux-x86_64",
+            )
+        )[0]
+    )
 except IndexError:
     pass
 
 import carla
 
-import logging
 import random
 
 try:
     import pygame
 except ImportError:
-    raise RuntimeError('cannot import pygame, make sure pygame package is installed')
+    raise RuntimeError("cannot import pygame, make sure pygame package is installed")
 
 try:
     import numpy as np
 except ImportError:
-    raise RuntimeError('cannot import numpy, make sure numpy package is installed')
+    raise RuntimeError("cannot import numpy, make sure numpy package is installed")
 
 try:
     import queue
@@ -50,7 +55,7 @@ def draw_image(surface, image):
 
 def get_font():
     fonts = [x for x in pygame.font.get_fonts()]
-    default_font = 'ubuntumono'
+    default_font = "ubuntumono"
     font = default_font if default_font in fonts else fonts[0]
     font = pygame.font.match_font(font)
     return pygame.font.Font(font, 14)
@@ -70,12 +75,12 @@ def main():
     actor_list = []
     pygame.init()
 
-    client = carla.Client('localhost', 2000)
+    client = carla.Client("localhost", 2000)
     client.set_timeout(2.0)
 
     world = client.get_world()
 
-    print('enabling synchronous mode.')
+    print("enabling synchronous mode.")
     settings = world.get_settings()
     settings.synchronous_mode = True
     world.apply_settings(settings)
@@ -88,15 +93,16 @@ def main():
         blueprint_library = world.get_blueprint_library()
 
         vehicle = world.spawn_actor(
-            random.choice(blueprint_library.filter('vehicle.*')),
-            start_pose)
+            random.choice(blueprint_library.filter("vehicle.*")), start_pose
+        )
         actor_list.append(vehicle)
         vehicle.set_simulate_physics(False)
 
         camera = world.spawn_actor(
-            blueprint_library.find('sensor.camera.rgb'),
+            blueprint_library.find("sensor.camera.rgb"),
             carla.Transform(carla.Location(x=-5.5, z=2.8), carla.Rotation(pitch=-15)),
-            attach_to=vehicle)
+            attach_to=vehicle,
+        )
         actor_list.append(camera)
 
         # Make sync queue for sensor data.
@@ -104,11 +110,6 @@ def main():
         camera.listen(image_queue.put)
 
         frame = None
-
-        # display = pygame.display.set_mode(
-        #     (800, 600),
-        #     pygame.HWSURFACE | pygame.DOUBLEBUF)
-        font = get_font()
 
         clock = pygame.time.Clock()
 
@@ -122,7 +123,7 @@ def main():
 
             if frame is not None:
                 if ts.frame_count != frame + 1:
-                    print('frame skip!')
+                    print("frame skip!")
 
             frame = ts.frame_count
 
@@ -130,35 +131,29 @@ def main():
                 image = image_queue.get()
                 if image.frame_number == ts.frame_count:
                     break
-                print (
-                    'wrong image time-stampstamp: frame=%d, image.frame=%d',
+                print(
+                    "wrong image time-stampstamp: frame=%d, image.frame=%d",
                     ts.frame_count,
-                    image.frame_number)
+                    image.frame_number,
+                )
 
             waypoint = random.choice(waypoint.next(2))
             vehicle.set_transform(waypoint.transform)
 
-            # draw_image(display, image)
-
-            text_surface = font.render('% 5d FPS' % clock.get_fps(), True, (255, 255, 255))
-            # display.blit(text_surface, (8, 10))
-
-            # pygame.display.flip()
-
     finally:
-        print('\ndisabling synchronous mode.')
+        print("\ndisabling synchronous mode.")
         settings = world.get_settings()
         settings.synchronous_mode = False
         world.apply_settings(settings)
 
-        print('destroying actors.')
+        print("destroying actors.")
         for actor in actor_list:
             actor.destroy()
 
         pygame.quit()
-        print('done.')
+        print("done.")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     main()

@@ -6,7 +6,9 @@ from torch.nn import functional as F
 
 # ORDER
 from enum import Enum
-Orders = Enum('Order', 'Follow_Lane Straight Right Left')
+
+Orders = Enum("Order", "Follow_Lane Straight Right Left")
+
 
 # Factorised NoisyLinear layer with bias
 class NoisyLinear(nn.Module):
@@ -18,10 +20,10 @@ class NoisyLinear(nn.Module):
         self.std_init = std_init
         self.weight_mu = nn.Parameter(torch.empty(out_features, in_features))
         self.weight_sigma = nn.Parameter(torch.empty(out_features, in_features))
-        self.register_buffer('weight_epsilon', torch.empty(out_features, in_features))
+        self.register_buffer("weight_epsilon", torch.empty(out_features, in_features))
         self.bias_mu = nn.Parameter(torch.empty(out_features))
         self.bias_sigma = nn.Parameter(torch.empty(out_features))
-        self.register_buffer('bias_epsilon', torch.empty(out_features))
+        self.register_buffer("bias_epsilon", torch.empty(out_features))
         self.reset_parameters()
         self.reset_noise()
 
@@ -42,15 +44,19 @@ class NoisyLinear(nn.Module):
     def reset_noise(self):
         epsilon_in = self._scale_noise(self.in_features)
         epsilon_out = self._scale_noise(self.out_features)
-        self.weight_epsilon = (epsilon_out.ger(epsilon_in))
-        self.bias_epsilon = (epsilon_out)
+        self.weight_epsilon = epsilon_out.ger(epsilon_in)
+        self.bias_epsilon = epsilon_out
 
     def forward(self, input):
         if self.training:
-            return F.linear(input, self.weight_mu + self.weight_sigma * self.weight_epsilon,
-                            self.bias_mu + self.bias_sigma * self.bias_epsilon)
+            return F.linear(
+                input,
+                self.weight_mu + self.weight_sigma * self.weight_epsilon,
+                self.bias_mu + self.bias_sigma * self.bias_epsilon,
+            )
         else:
             return F.linear(input, self.weight_mu, self.bias_mu)
+
 
 class DQN(nn.Module):
     def __init__(self, args, action_space):
@@ -62,7 +68,7 @@ class DQN(nn.Module):
 
         self.magic_number_repeat_scaler_in_fc = 10
 
-        self.magic_number_SCALE_steering_in_fc = 10 # We want to multiply by 10 the steering...
+        self.magic_number_SCALE_steering_in_fc = 10  # We want to multiply by 10 the steering...
 
         self.quantile_embedding_dim = args.quantile_embedding_dim
 
@@ -71,17 +77,29 @@ class DQN(nn.Module):
         else:
             size_RL_state = 8192
         self.iqn_fc = nn.Linear(self.quantile_embedding_dim, size_RL_state)
-        
+
         hidden_size = 1024
 
         self.fcnoisy_h_a = NoisyLinear(size_RL_state, hidden_size)
 
         hidden_size2 = 512
 
-        self.fcnoisy0_z_a_lane_follow = NoisyLinear(hidden_size+2*self.magic_number_repeat_scaler_in_fc*self.history_length, hidden_size2)
-        self.fcnoisy0_z_a_straight = NoisyLinear(hidden_size+2*self.magic_number_repeat_scaler_in_fc*self.history_length, hidden_size2)
-        self.fcnoisy0_z_a_right = NoisyLinear(hidden_size+2*self.magic_number_repeat_scaler_in_fc*self.history_length, hidden_size2)
-        self.fcnoisy0_z_a_left = NoisyLinear(hidden_size+2*self.magic_number_repeat_scaler_in_fc*self.history_length, hidden_size2)
+        self.fcnoisy0_z_a_lane_follow = NoisyLinear(
+            hidden_size + 2 * self.magic_number_repeat_scaler_in_fc * self.history_length,
+            hidden_size2,
+        )
+        self.fcnoisy0_z_a_straight = NoisyLinear(
+            hidden_size + 2 * self.magic_number_repeat_scaler_in_fc * self.history_length,
+            hidden_size2,
+        )
+        self.fcnoisy0_z_a_right = NoisyLinear(
+            hidden_size + 2 * self.magic_number_repeat_scaler_in_fc * self.history_length,
+            hidden_size2,
+        )
+        self.fcnoisy0_z_a_left = NoisyLinear(
+            hidden_size + 2 * self.magic_number_repeat_scaler_in_fc * self.history_length,
+            hidden_size2,
+        )
 
         self.fcnoisy1_z_a_lane_follow = NoisyLinear(hidden_size2, action_space)
         self.fcnoisy1_z_a_straight = NoisyLinear(hidden_size2, action_space)
@@ -97,7 +115,16 @@ class DQN(nn.Module):
         quantile_net = quantiles.repeat([1, self.quantile_embedding_dim])
 
         quantile_net = torch.cos(
-            torch.arange(1, self.quantile_embedding_dim + 1, 1, device=torch.device('cuda'), dtype=torch.float32) * math.pi * quantile_net)
+            torch.arange(
+                1,
+                self.quantile_embedding_dim + 1,
+                1,
+                device=torch.device("cuda"),
+                dtype=torch.float32,
+            )
+            * math.pi
+            * quantile_net
+        )
 
         quantile_net = self.iqn_fc(quantile_net)
         quantile_net = F.relu(quantile_net)
@@ -105,10 +132,10 @@ class DQN(nn.Module):
         rl_state_net = images.repeat(num_quantiles, 1)
         rl_state_net = rl_state_net * quantile_net
 
-        mask_lane_follow = (orders == Orders.Follow_Lane.value)
-        mask_straight = (orders == Orders.Straight.value)
-        mask_right = (orders == Orders.Right.value)
-        mask_left = (orders == Orders.Left.value)
+        mask_lane_follow = orders == Orders.Follow_Lane.value
+        mask_straight = orders == Orders.Straight.value
+        mask_right = orders == Orders.Right.value
+        mask_left = orders == Orders.Left.value
 
         if batch_size != 1:
             mask_lane_follow = mask_lane_follow.float()[:, None].repeat(num_quantiles, 1)
@@ -129,9 +156,13 @@ class DQN(nn.Module):
         speeds = speeds.repeat(num_quantiles, self.magic_number_repeat_scaler_in_fc)
         steerings = steerings.repeat(num_quantiles, self.magic_number_repeat_scaler_in_fc)
 
-        just_before_order_heads_a_plus_speed_steering = torch.cat((just_before_order_heads_a, speeds, steerings), 1)
+        just_before_order_heads_a_plus_speed_steering = torch.cat(
+            (just_before_order_heads_a, speeds, steerings), 1
+        )
 
-        a_lane_follow = self.fcnoisy0_z_a_lane_follow(just_before_order_heads_a_plus_speed_steering)
+        a_lane_follow = self.fcnoisy0_z_a_lane_follow(
+            just_before_order_heads_a_plus_speed_steering
+        )
         a_lane_follow = self.fcnoisy1_z_a_lane_follow(F.relu(a_lane_follow))
 
         a_straight = self.fcnoisy0_z_a_straight(just_before_order_heads_a_plus_speed_steering)
@@ -143,13 +174,16 @@ class DQN(nn.Module):
         a_left = self.fcnoisy0_z_a_left(just_before_order_heads_a_plus_speed_steering)
         a_left = self.fcnoisy1_z_a_left(F.relu(a_left))
 
-        a = a_lane_follow * mask_lane_follow + a_straight * mask_straight\
-            + a_right * mask_right + a_left * mask_left
+        a = (
+            a_lane_follow * mask_lane_follow
+            + a_straight * mask_straight
+            + a_right * mask_right
+            + a_left * mask_left
+        )
 
         return a, quantiles
 
     def reset_noise(self):
         for name, module in self.named_children():
-            if 'fcnoisy' in name:
+            if "fcnoisy" in name:
                 module.reset_noise()
-

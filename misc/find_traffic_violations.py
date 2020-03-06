@@ -13,8 +13,6 @@ from pathlib import Path
 
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import tqdm
 
 
 class Vector2(object):
@@ -73,35 +71,28 @@ def get_collision(p1, p2, lines):
 
 def parse(df, lights):
     n = len(df)
-    t = np.array(list(range(n)))
     traveled = 0.0
 
     broken_t = list()
     broken = list()
 
     for i in range(1, n):
-        a = Vector2(df['x'][i-1], df['y'][i-1])
-        b = Vector2(df['x'][i], df['y'][i])
+        a = Vector2(df["x"][i - 1], df["y"][i - 1])
+        b = Vector2(df["x"][i], df["y"][i])
         traveled += (a - b).norm()
 
-        if not df['is_light_red'][i-1]:
+        if not df["is_light_red"][i - 1]:
             continue
 
         if get_collision(a, b, lights):
             broken_t.append(i)
-            broken.append(df['is_light_red'][i-1])
-
-    if args.debug:
-        plt.plot(t, is_light_red)
-        plt.plot(t, speed)
-        plt.plot(broken_t, broken, 'r.')
-        plt.show()
+            broken.append(df["is_light_red"][i - 1])
 
     return broken, traveled
 
 
 def get_town(town):
-    lights = Path('light_town%s.txt' % town).read_text().strip().split('\n')
+    lights = Path("light_town%s.txt" % town).read_text().strip().split("\n")
     lights = [tuple(map(float, x.split())) for x in lights]
     lights = np.array(lights)
 
@@ -121,21 +112,21 @@ def get_town(town):
 def main(run_dir):
     result = list()
 
-    for path in sorted(run_dir.glob('*/summary.csv')):
+    for path in sorted(run_dir.glob("*/summary.csv")):
         summary_csv = pd.read_csv(str(path))
         total = len(summary_csv)
-        lights = get_town(1 if 'Town01' in str(path) else 2)
+        lights = get_town(1 if "Town01" in str(path) else 2)
 
         n_infractions = list()
         distances = list()
 
         for _, row in summary_csv.iterrows():
-            weather = row['weather']
-            start = row['start']
-            target = row['target']
-            run_csv = 'w%s_s%s_t%s.csv' % (weather, start, target)
+            weather = row["weather"]
+            start = row["start"]
+            target = row["target"]
+            run_csv = "w%s_s%s_t%s.csv" % (weather, start, target)
 
-            diag = pd.read_csv(str(path.parent / 'diagnostics' / run_csv))
+            diag = pd.read_csv(str(path.parent / "diagnostics" / run_csv))
 
             crosses, dist = parse(diag, lights)
 
@@ -143,22 +134,25 @@ def main(run_dir):
             distances.append(dist)
 
         print(path, total)
-        print('%s infractions total.' % np.sum(n_infractions))
-        print('%s total dist' % np.sum(distances))
+        print("%s infractions total." % np.sum(n_infractions))
+        print("%s total dist" % np.sum(distances))
 
-        result.append({
-            'suite': path.parent.stem,
-            'infractions': sum(n_infractions),
-            'per_10km': sum(n_infractions) / (np.sum(distances) / 10000),
-            'distances': sum(distances)})
+        result.append(
+            {
+                "suite": path.parent.stem,
+                "infractions": sum(n_infractions),
+                "per_10km": sum(n_infractions) / (np.sum(distances) / 10000),
+                "distances": sum(distances),
+            }
+        )
 
-        pd.DataFrame(result).to_csv('%s/lights.csv' % path.parent.parent, index=False)
+        pd.DataFrame(result).to_csv("%s/lights.csv" % path.parent.parent, index=False)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--run_dir', required=True, type=str)
-    parser.add_argument('--debug', action='store_true', default=False)
+    parser.add_argument("--run_dir", required=True, type=str)
+    parser.add_argument("--debug", action="store_true", default=False)
 
     args = parser.parse_args()
 

@@ -2,17 +2,16 @@ import numpy as np
 import torch
 from collections import deque, namedtuple
 import cv2
-import glob, os
+import os
 import carla
 
 from .model_supervised import Model_Segmentation_Traffic_Light_Supervised
 from .model_RL import DQN, Orders
 
 
-class AgentIAsRL():
+class AgentIAsRL:
     def __init__(self, args=None, **kwargs):
         super().__init__(**kwargs)
-
 
         self.args = args
 
@@ -22,7 +21,11 @@ class AgentIAsRL():
         for file in os.listdir(path_to_model_supervised):
             if ".pth" in file:
                 if path_model_supervised is not None:
-                    print("There is multiple model supervised in folder ", path_to_model_supervised , " you must keep only one!")
+                    print(
+                        "There is multiple model supervised in folder ",
+                        path_to_model_supervised,
+                        " you must keep only one!",
+                    )
                     exit(1)
                 path_model_supervised = os.path.join(path_to_model_supervised, file)
         if path_model_supervised is None:
@@ -30,8 +33,12 @@ class AgentIAsRL():
             exit(1)
 
         # All this magic number should match the one used when training supervised...
-        model_supervised = Model_Segmentation_Traffic_Light_Supervised(len(args.steps_image), len(args.steps_image), 1024, 6, 4, args.crop_sky)
-        model_supervised.load_state_dict(torch.load(path_model_supervised, map_location=args.device))
+        model_supervised = Model_Segmentation_Traffic_Light_Supervised(
+            len(args.steps_image), len(args.steps_image), 1024, 6, 4, args.crop_sky
+        )
+        model_supervised.load_state_dict(
+            torch.load(path_model_supervised, map_location=args.device)
+        )
         model_supervised.to(device=args.device)
 
         self.encoder = model_supervised.encoder
@@ -55,35 +62,47 @@ class AgentIAsRL():
 
             current_RL_model = DQN(args, self.action_space).to(device=args.device)
             current_RL_model_dict = current_RL_model.state_dict()
-            
+
             print("we load RL model ", current_model)
             checkpoint = torch.load(current_model)
-            
+
             # 1. filter out unnecessary keys
-            pretrained_dict = {k: v for k, v in checkpoint['model_state_dict'].items() if k in current_RL_model_dict}
+            pretrained_dict = {
+                k: v
+                for k, v in checkpoint["model_state_dict"].items()
+                if k in current_RL_model_dict
+            }
             # 2. overwrite entries in the existing state dict
-            current_RL_model_dict.update(pretrained_dict) 
-            # 3. load the new state dict            
+            current_RL_model_dict.update(pretrained_dict)
+            # 3. load the new state dict
             current_RL_model.load_state_dict(current_RL_model_dict)
             self.tab_RL_model.append(current_RL_model)
 
-        self.window = max([abs(number) for number in args.steps_image]) + 1  # Number of frames to concatenate
+        self.window = (
+            max([abs(number) for number in args.steps_image]) + 1
+        )  # Number of frames to concatenate
         self.RGB_image_buffer = deque([], maxlen=self.window)
         self.device = args.device
 
         self.state_buffer = deque([], maxlen=self.window)
-        self.State = namedtuple('State', ('image', 'speed', 'order', 'steering'))
+        self.State = namedtuple("State", ("image", "speed", "order", "steering"))
 
         if args.crop_sky:
-            blank_state = self.State(np.zeros(6144, dtype=np.float32), -1, -1, 0) # RGB Image, color channet first for torch
+            blank_state = self.State(
+                np.zeros(6144, dtype=np.float32), -1, -1, 0
+            )  # RGB Image, color channet first for torch
         else:
             blank_state = self.State(np.zeros(8192, dtype=np.float32), -1, -1, 0)
         for _ in range(self.window):
             self.state_buffer.append(blank_state)
             if args.crop_sky:
-                self.RGB_image_buffer.append(np.zeros((3, args.front_camera_height - 120, args.front_camera_width)))
+                self.RGB_image_buffer.append(
+                    np.zeros((3, args.front_camera_height - 120, args.front_camera_width))
+                )
             else:
-                self.RGB_image_buffer.append(np.zeros((3, args.front_camera_height, args.front_camera_width)))
+                self.RGB_image_buffer.append(
+                    np.zeros((3, args.front_camera_height, args.front_camera_width))
+                )
 
         self.last_steering = 0
         self.last_order = 0
@@ -91,7 +110,7 @@ class AgentIAsRL():
         self.current_timestep = 0
 
         self.nb_frame_stuck = 0
-        self.speed_stuck = 5/3.6 # 5km/h
+        self.speed_stuck = 5 / 3.6  # 5km/h
 
     def act(self, state_buffer, RL_model):
         speeds = []
@@ -102,26 +121,37 @@ class AgentIAsRL():
             speeds.append(state.speed)
             steerings.append(state.steering)
         images = torch.from_numpy(state_buffer[-1].image).to(self.device, dtype=torch.float32)
-        speeds = torch.from_numpy(np.stack(speeds).astype(np.float32)).to(self.device, dtype=torch.float32)
-        steerings = torch.from_numpy(np.stack(steerings).astype(np.float32)).to(self.device, dtype=torch.float32)
+        speeds = torch.from_numpy(np.stack(speeds).astype(np.float32)).to(
+            self.device, dtype=torch.float32
+        )
+        steerings = torch.from_numpy(np.stack(steerings).astype(np.float32)).to(
+            self.device, dtype=torch.float32
+        )
         with torch.no_grad():
-            quantile_values, _ = RL_model(images.unsqueeze(0), speeds.unsqueeze(0), order, steerings.unsqueeze(0), self.args.num_quantile_samples)
+            quantile_values, _ = RL_model(
+                images.unsqueeze(0),
+                speeds.unsqueeze(0),
+                order,
+                steerings.unsqueeze(0),
+                self.args.num_quantile_samples,
+            )
             return quantile_values.mean(0).argmax(0).item()
 
-    # We had different mapping int/order in our training than in the CARLA benchmark, so we need to remap orders
+    # We had different mapping int/order in our training than in the CARLA benchmark,
+    # so we need to remap orders
     def adapt_order(self, incoming_obs_command):
-        if incoming_obs_command == 1: # LEFT
+        if incoming_obs_command == 1:  # LEFT
             return Orders.Left.value
-        if incoming_obs_command == 2: # RIGHT
+        if incoming_obs_command == 2:  # RIGHT
             return Orders.Right.value
-        if incoming_obs_command == 3: # STRAIGHT
+        if incoming_obs_command == 3:  # STRAIGHT
             return Orders.Straight.value
-        if incoming_obs_command == 4: # FOLLOW_LANE
+        if incoming_obs_command == 4:  # FOLLOW_LANE
             return Orders.Follow_Lane.value
 
     def run_step(self, observations):
         self.current_timestep += 1
-        rgb = observations['rgb'].copy()
+        rgb = observations["rgb"].copy()
         if self.args.crop_sky:
             rgb = np.array(rgb)[120:, :, :]
         else:
@@ -134,17 +164,25 @@ class AgentIAsRL():
         rgb = np.rollaxis(rgb, 2, 0)
         self.RGB_image_buffer.append(rgb)
 
-        speed = np.linalg.norm(observations['velocity'])
+        speed = np.linalg.norm(observations["velocity"])
 
-        order = self.adapt_order(int(observations['command']))
+        order = self.adapt_order(int(observations["command"]))
         if self.last_order != order:
             print("order = ", Orders(order).name)
             self.last_order = order
 
         np_array_RGB_input = np.concatenate(
-            [self.RGB_image_buffer[indice_image + self.window - 1] for indice_image in self.args.steps_image])
-        torch_tensor_input = torch.from_numpy(np_array_RGB_input).to(dtype=torch.float32, device=self.device).div_(
-            255).unsqueeze(0)
+            [
+                self.RGB_image_buffer[indice_image + self.window - 1]
+                for indice_image in self.args.steps_image
+            ]
+        )
+        torch_tensor_input = (
+            torch.from_numpy(np_array_RGB_input)
+            .to(dtype=torch.float32, device=self.device)
+            .div_(255)
+            .unsqueeze(0)
+        )
 
         with torch.no_grad():
             current_encoding = self.encoder(torch_tensor_input)
@@ -168,10 +206,13 @@ class AgentIAsRL():
 
         for action in tab_action:
 
-            steer += ((action % self.args.nb_action_steering) - int(self.args.nb_action_steering / 2)) * (
-                        self.args.max_steering / int(self.args.nb_action_steering / 2))
+            steer += (
+                (action % self.args.nb_action_steering) - int(self.args.nb_action_steering / 2)
+            ) * (self.args.max_steering / int(self.args.nb_action_steering / 2))
             if action < int(self.args.nb_action_steering * self.args.nb_action_throttle):
-                throttle += (int(action / self.args.nb_action_steering)) * (self.args.max_throttle / (self.args.nb_action_throttle - 1))
+                throttle += (int(action / self.args.nb_action_steering)) * (
+                    self.args.max_throttle / (self.args.nb_action_throttle - 1)
+                )
                 brake += 0
             else:
                 throttle += 0
@@ -179,7 +220,7 @@ class AgentIAsRL():
 
         steer = steer / len(tab_action)
         throttle = throttle / len(tab_action)
-        if brake < len(tab_action)/2:
+        if brake < len(tab_action) / 2:
             brake = 0
         else:
             brake = brake / len(tab_action)
@@ -201,4 +242,3 @@ class AgentIAsRL():
         control.manual_gear_shift = False
         self.last_steering = steer
         return control
-

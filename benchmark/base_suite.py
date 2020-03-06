@@ -4,7 +4,9 @@ from bird_view.utils import carla_utils as cu
 
 
 class BaseSuite(cu.CarlaWrapper):
-    def __init__(self, weathers=[0], n_vehicles=0, n_pedestrians=0, disable_two_wheels=False, **kwargs):
+    def __init__(
+        self, weathers=[0], n_vehicles=0, n_pedestrians=0, disable_two_wheels=False, **kwargs
+    ):
         super().__init__(**kwargs)
 
         self._weathers = weathers
@@ -32,6 +34,6 @@ class BaseSuite(cu.CarlaWrapper):
     @property
     def all_tasks(self):
         for (start, target), weather in product(self.pose_tasks, self.weathers):
-            run_name = 's%d_t%d_w%d' % (start, target, weather)
+            run_name = "s%d_t%d_w%d" % (start, target, weather)
 
             yield weather, (start, target), run_name
