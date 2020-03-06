@@ -19,7 +19,7 @@ cd carla_RL_IAs
 mv LICENSE LICENSE_CARLA # Conflict with LICENSE from CARLA
 git init
 git remote add origin https://github.com/marintoro/LearningByCheating.git
-git pull origin release-0.9.6
+git pull origin master
 wget http://www.cs.utexas.edu/~dchen/lbc_release/navmesh/Town01.bin
 wget http://www.cs.utexas.edu/~dchen/lbc_release/navmesh/Town02.bin
 mv Town*.bin CarlaUE4/Content/Carla/Maps/Nav/
@@ -48,8 +48,6 @@ unzip model_RL_IAs_CARLA_Challenge.zip
 # Download model checkpoints trained only on Town01
 wget https://github.com/marintoro/LearningByCheating/releases/download/v1.0/model_RL_IAs_only_town01_train_weather.zip
 unzip model_RL_IAs_only_town01_train_weather.zip
-
-cd ../..
 ```
 
 Then, open up a terminal, inside the carla directory run `./CarlaUE4.sh -fps=10 -benchmark`. 
