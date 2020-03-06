@@ -1,5 +1,6 @@
 name: carla_RL_IAs
 dependencies:
+  - python=3.5
   - networkx
   - pandas
   - tqdm
@@ -8,6 +9,5 @@ dependencies:
   - pip:
     - loguru
     - opencv-python
-    - pygame
     - tensorboardx
     - terminaltables
