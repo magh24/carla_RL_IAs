@@ -1,12 +1,13 @@
 # End-to-End Model-Free Reinforcement Learning for Urban Driving using Implicit Affordances
 
-This repo contains the inference code and the weights of the paper. It's a fork of the
-repository [**Learning by Cheating**](https://github.com/dianchen96/LearningByCheating) 
+This repo contains the inference code and the weights of our [**paper**](https://arxiv.org/abs/1911.10868)
+accepted at CVPR 2020. 
+It's a fork of the repository [**Learning by Cheating**](https://github.com/dianchen96/LearningByCheating) 
 from which we just kept all the code related to the evaluation on the standard CARLA
-benchmark and on the new release No-Crash benchmark.
+benchmark and on the new released No-Crash benchmark.
 
 ### Installation
-We provide a quick script here in case you would like to skip compiling and directly use the official binary release:
+We provide a script here to install and download our weights:
 
 ```bash
 # Download CARLA 0.9.6
@@ -40,98 +41,68 @@ rm carla-0.9.6-py3.5-linux-x86_64.egg
 wget http://www.cs.utexas.edu/~dchen/lbc_release/egg/carla-0.9.6-py3.5-linux-x86_64.egg
 easy_install carla-0.9.6-py3.5-linux-x86_64.egg
 
+# Download model checkpoints trained only on Town01
+wget https://github.com/marintoro/LearningByCheating/releases/download/v1.0/model_RL_IAs_only_town01_train_weather.zip
+unzip model_RL_IAs_only_town01_train_weather.zip
+
+
 # Download model checkpoints used for CARLA challenge
 cd ../../..
 wget https://github.com/marintoro/LearningByCheating/releases/download/v1.0/model_RL_IAs_CARLA_Challenge.zip
 unzip model_RL_IAs_CARLA_Challenge.zip
-
-# Download model checkpoints trained only on Town01
-wget https://github.com/marintoro/LearningByCheating/releases/download/v1.0/model_RL_IAs_only_town01_train_weather.zip
-unzip model_RL_IAs_only_town01_train_weather.zip
 ```
 
 Then, open up a terminal, inside the carla directory run `./CarlaUE4.sh -fps=10 -benchmark`. 
-Open another terminal and run `CUDA_VISIBLE_DEVICES="0" python benchmark_agent.py --suite=town2 
+Open another terminal and run `python benchmark_agent.py --suite=town2 
 --max-run 100 --path-folder-model model_RL_IAs_only_town01_train_weather/ --render --crop-sky` 
 to see our model driving on test town!
 
 If you want to see our model used for the CARLA challenge you need to run instead
-`CUDA_VISIBLE_DEVICES="0" python benchmark_agent.py --suite=town2 
+`python benchmark_agent.py --suite=town2 
 --max-run 100 --path-folder-model model_RL_IAs_CARLA_Challenge/ --render` 
 
 
 ## Detailed Benchmark Results
-### Only town01/train weather (ONGOING)
+### Only town01/train weather
 ```
 ╔Performance of autopilot════════════╦═════════╦═══════╗
 ║ Suite Name          ║ Success Rate ║ Total   ║ Seeds ║
 ╠═════════════════════╬══════════════╬═════════╬═══════╣
-║ FullTown01-v1       ║ 100          ║ 100/100 ║ 0     ║
-║ FullTown01-v2       ║ 100          ║ 50/50   ║ 0     ║
-║ FullTown01-v3       ║ 100          ║ 100/100 ║ 0     ║
-║ FullTown01-v4       ║ 100          ║ 50/50   ║ 0     ║
-║ FullTown02-v1       ║ 100          ║ 100/100 ║ 0     ║
-║ FullTown02-v2       ║ 100          ║ 50/50   ║ 0     ║
-║ FullTown02-v3       ║ 100          ║ 100/100 ║ 0     ║
-║ FullTown02-v4       ║ 100          ║ 50/50   ║ 0     ║
-║ NoCrashTown01-v1    ║ 100.0 ± 0.0  ║ 300/300 ║ 0,1,2 ║
-║ NoCrashTown01-v2    ║ 100.0 ± 0.0  ║ 150/150 ║ 0,1,2 ║
-║ NoCrashTown01-v3    ║ 98.7 ± 0.6   ║ 296/300 ║ 0,1,2 ║
-║ NoCrashTown01-v4    ║ 99.3 ± 1.2   ║ 149/150 ║ 0,1,2 ║
-║ NoCrashTown01-v5    ║ 86.3 ± 3.2   ║ 259/300 ║ 0,1,2 ║
-║ NoCrashTown01-v6    ║ 82.7 ± 6.1   ║ 124/150 ║ 0,1,2 ║
-║ NoCrashTown02-v1    ║ 100.0 ± 0.0  ║ 300/300 ║ 0,1,2 ║
-║ NoCrashTown02-v2    ║ 100.0 ± 0.0  ║ 150/150 ║ 0,1,2 ║
-║ NoCrashTown02-v3    ║ 99.0 ± 1.0   ║ 297/300 ║ 0,1,2 ║
-║ NoCrashTown02-v4    ║ 98.0 ± 2.0   ║ 147/150 ║ 0,1,2 ║
-║ NoCrashTown02-v5    ║ 60.0 ± 2.6   ║ 180/300 ║ 0,1,2 ║
-║ NoCrashTown02-v6    ║ 58.7 ± 7.6   ║ 88/150  ║ 0,1,2 ║
-║ StraightTown01-v1   ║ 100          ║ 100/100 ║ 0     ║
-║ StraightTown01-v2   ║ 100          ║ 50/50   ║ 0     ║
-║ StraightTown02-v1   ║ 100          ║ 100/100 ║ 0     ║
-║ StraightTown02-v2   ║ 100          ║ 50/50   ║ 0     ║
-║ TurnTown01-v1       ║ 100          ║ 100/100 ║ 0     ║
-║ TurnTown01-v2       ║ 100          ║ 50/50   ║ 0     ║
-║ TurnTown02-v1       ║ 100          ║ 100/100 ║ 0     ║
-║ TurnTown02-v2       ║ 100          ║ 50/50   ║ 0     ║
+║ FullTown01-v1       ║ 100          ║ 100/100 ║ 2019  ║
+║ FullTown01-v2       ║ 100          ║ 50/50   ║ 2019  ║
+║ FullTown01-v3       ║ 100          ║ 100/100 ║ 2019  ║
+║ FullTown01-v4       ║ 100          ║ 50/50   ║ 2019  ║
+║ FullTown02-v1       ║ 99           ║ 99/100  ║ 2019  ║
+║ FullTown02-v2       ║ 96           ║ 48/50   ║ 2019  ║
+║ FullTown02-v3       ║ 98           ║ 98/100  ║ 2019  ║
+║ FullTown02-v4       ║ 92           ║ 46/50   ║ 2019  ║
+║ NoCrashTown01-v1    ║ 100          ║ 100/100 ║ 2019  ║
+║ NoCrashTown01-v2    ║ 24           ║ 12/50   ║ 2019  ║
+║ NoCrashTown01-v3    ║ 99           ║ 99/100  ║ 2019  ║
+║ NoCrashTown01-v4    ║ 26           ║ 13/50   ║ 2019  ║
+║ NoCrashTown01-v5    ║ 67           ║ 67/100  ║ 2019  ║
+║ NoCrashTown01-v6    ║ 14           ║ 7/50    ║ 2019  ║
+║ NoCrashTown02-v1    ║ 97           ║ 97/100  ║ 2019  ║
+║ NoCrashTown02-v2    ║ 18           ║ 9/50    ║ 2019  ║
+║ NoCrashTown02-v3    ║ 86           ║ 86/100  ║ 2019  ║
+║ NoCrashTown02-v4    ║ 14           ║ 7/50    ║ 2019  ║
+║ NoCrashTown02-v5    ║ 44           ║ 44/100  ║ 2019  ║
+║ NoCrashTown02-v6    ║ 14           ║ 7/50    ║ 2019  ║
+║ StraightTown01-v1   ║ 100          ║ 100/100 ║ 2019  ║
+║ StraightTown01-v2   ║ 100          ║ 50/50   ║ 2019  ║
+║ StraightTown02-v1   ║ 100          ║ 100/100 ║ 2019  ║
+║ StraightTown02-v2   ║ 100          ║ 50/50   ║ 2019  ║
+║ TurnTown01-v1       ║ 100          ║ 100/100 ║ 2019  ║
+║ TurnTown01-v2       ║ 100          ║ 50/50   ║ 2019  ║
+║ TurnTown02-v1       ║ 99           ║ 99/100  ║ 2019  ║
+║ TurnTown02-v2       ║ 100          ║ 50/50   ║ 2019  ║
 ╚═════════════════════╩══════════════╩═════════╩═══════╝
 ```
 
 ### CARLA Challenge (town02/04/05 with dynamic weather) (ONGOING)
 
 ```
-╔Performance of model-10═══════════╦═════════╦═══════╗
-║ Suite Name        ║ Success Rate ║ Total   ║ Seeds ║
-╠═══════════════════╬══════════════╬═════════╬═══════╣
-║ FullTown01-v1     ║ 100          ║ 100/100 ║ 0     ║
-║ FullTown01-v2     ║ 100          ║ 50/50   ║ 0     ║
-║ FullTown01-v3     ║ 100          ║ 100/100 ║ 0     ║
-║ FullTown01-v4     ║ 96           ║ 48/50   ║ 0     ║
-║ FullTown02-v1     ║ 98           ║ 98/100  ║ 0     ║
-║ FullTown02-v2     ║ 100          ║ 50/50   ║ 0     ║
-║ FullTown02-v3     ║ 99           ║ 99/100  ║ 0     ║
-║ FullTown02-v4     ║ 100          ║ 50/50   ║ 0     ║
-║ NoCrashTown01-v1  ║ 97.0 ± 1.0   ║ 291/300 ║ 0,1,2 ║
-║ NoCrashTown01-v2  ║ 86.7 ± 4.2   ║ 130/150 ║ 0,1,2 ║
-║ NoCrashTown01-v3  ║ 93.3 ± 0.6   ║ 280/300 ║ 0,1,2 ║
-║ NoCrashTown01-v4  ║ 87.3 ± 3.1   ║ 131/150 ║ 0,1,2 ║
-║ NoCrashTown01-v5  ║ 70.7 ± 4.5   ║ 212/300 ║ 0,1,2 ║
-║ NoCrashTown01-v6  ║ 63.3 ± 3.1   ║ 95/150  ║ 0,1,2 ║
-║ NoCrashTown02-v1  ║ 99.7 ± 0.6   ║ 299/300 ║ 0,1,2 ║
-║ NoCrashTown02-v2  ║ 70.0 ± 4.0   ║ 105/150 ║ 0,1,2 ║
-║ NoCrashTown02-v3  ║ 94.0 ± 3.0   ║ 281/299 ║ 0,1,2 ║
-║ NoCrashTown02-v4  ║ 62.0 ± 2.0   ║ 93/150  ║ 0,1,2 ║
-║ NoCrashTown02-v5  ║ 51.3 ± 3.1   ║ 154/300 ║ 0,1,2 ║
-║ NoCrashTown02-v6  ║ 38.7 ± 6.4   ║ 58/150  ║ 0,1,2 ║
-║ StraightTown01-v1 ║ 100          ║ 100/100 ║ 0     ║
-║ StraightTown01-v2 ║ 100          ║ 50/50   ║ 0     ║
-║ StraightTown02-v1 ║ 100          ║ 100/100 ║ 0     ║
-║ StraightTown02-v2 ║ 100          ║ 50/50   ║ 0     ║
-║ TurnTown01-v1     ║ 100          ║ 100/100 ║ 0     ║
-║ TurnTown01-v2     ║ 96           ║ 48/50   ║ 0     ║
-║ TurnTown02-v1     ║ 100          ║ 100/100 ║ 0     ║
-║ TurnTown02-v2     ║ 100          ║ 50/50   ║ 0     ║
-╚═══════════════════╩══════════════╩═════════╩═══════╝
+COMING SOON
 ```
 
 ## License
