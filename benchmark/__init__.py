@@ -244,6 +244,30 @@ _add("FullTown02-noweather", n_vehicles=15, weathers=[1])
 
 
 _aliases = {
+    "all_suite": [
+        "NoCrashTown02-v5", "NoCrashTown02-v6",
+        "NoCrashTown01-v5", "NoCrashTown01-v6",
+        "NoCrashTown02-v3", "NoCrashTown02-v4",
+        "NoCrashTown01-v3", "NoCrashTown01-v4",
+        "NoCrashTown02-v1", "NoCrashTown02-v2",
+        "NoCrashTown01-v1", "NoCrashTown01-v2",
+        "FullTown02-v1",
+        "FullTown02-v2",
+        "FullTown02-v3",
+        "FullTown02-v4",
+        "StraightTown02-v1",
+        "StraightTown02-v2",
+        "TurnTown02-v1",
+        "TurnTown02-v2",
+        "FullTown01-v1",
+        "FullTown01-v2",
+        "FullTown01-v3",
+        "FullTown01-v4",
+        "StraightTown01-v1",
+        "StraightTown01-v2",
+        "TurnTown01-v1",
+        "TurnTown01-v2",
+    ],
     "town1": [
         "FullTown01-v1",
         "FullTown01-v2",

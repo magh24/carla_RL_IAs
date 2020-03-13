@@ -1,9 +1,14 @@
 import argparse
 import time
 
-# print("test torchvision bug before!")
-# import torchvision.models as models
-# print("test torchvision bug after!")
+# There is a known issue with carla and torch (or torchvision)
+# https://www.google.com/url?q=https://github.com/carla-simulator
+# /carla/issues/2132&sa=D&source=hangouts&ust=1584205287893000&u
+# sg=AFQjCNHYKEjQVb0NQYvsQd3BNMw0smQbyg
+# That's why we import torchvision there before anything else
+# Note that we found this was freezing when using cuda9.0
+# Probably if you encounter freeze, you should comment next line
+import torchvision.models as models
 from pathlib import Path
 
 from benchmark import make_suite, get_suites, ALL_SUITES
@@ -50,7 +55,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--port", type=int, default=2000)
     parser.add_argument("--suite", choices=ALL_SUITES, default="town1")
-    parser.add_argument("--seed", type=int, default=2019)
+    parser.add_argument("--seed", type=int, default=2020)
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--max-run", type=int, default=100)
 

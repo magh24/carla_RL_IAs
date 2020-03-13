@@ -21,16 +21,15 @@ class AgentIAsRL:
         for file in os.listdir(path_to_model_supervised):
             if ".pth" in file:
                 if path_model_supervised is not None:
-                    print(
-                        "There is multiple model supervised in folder ",
-                        path_to_model_supervised,
+                    raise ValueError(
+                        "There is multiple model supervised in folder " +
+                        path_to_model_supervised +
                         " you must keep only one!",
                     )
-                    exit(1)
                 path_model_supervised = os.path.join(path_to_model_supervised, file)
         if path_model_supervised is None:
-            print("We didn't find any model supervised in folder ", path_to_model_supervised)
-            exit(1)
+            raise ValueError("We didn't find any model supervised in folder " +
+                             path_to_model_supervised)
 
         # All this magic number should match the one used when training supervised...
         model_supervised = Model_Segmentation_Traffic_Light_Supervised(
@@ -54,8 +53,7 @@ class AgentIAsRL:
                 tab_model.append(os.path.join(path_to_model_RL, file))
 
         if len(tab_model) == 0:
-            print("We didn't find any RL model in folder ", path_to_model_RL)
-            exit(1)
+            raise ValueError("We didn't find any RL model in folder "+ path_to_model_RL)
 
         self.tab_RL_model = []
         for current_model in tab_model:
@@ -108,9 +106,6 @@ class AgentIAsRL:
         self.last_order = 0
 
         self.current_timestep = 0
-
-        self.nb_frame_stuck = 0
-        self.speed_stuck = 5 / 3.6  # 5km/h
 
     def act(self, state_buffer, RL_model):
         speeds = []
@@ -224,16 +219,6 @@ class AgentIAsRL:
             brake = 0
         else:
             brake = brake / len(tab_action)
-
-        # This is a little hack to "destuck" agent, sometimes the image is
-        # always the same and the agent never ever move...
-        if speed < self.speed_stuck:
-            self.nb_frame_stuck += 1
-        else:
-            self.nb_frame_stuck = 0
-        if self.current_timestep < 15 or self.nb_frame_stuck > 1000:
-            brake = 0
-            throttle = 0.5
 
         control = carla.VehicleControl()
         control.steer = np.clip(steer, -1.0, 1.0)
