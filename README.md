@@ -52,7 +52,7 @@ unzip model_RL_IAs_CARLA_Challenge.zip
 
 ```
 
-Then, open up a terminal, inside the carla directory run `./CarlaUE4.sh -fps=10 -benchmark`. 
+Then, open up a terminal, inside the carla directory run `./CarlaUE4.sh -fps=10 -benchmark -quality-level=Low`. 
 Open another terminal and run `python benchmark_agent.py --suite=town2 
 --max-run 100 --path-folder-model model_RL_IAs_only_town01_train_weather/ --render --crop-sky` 
 to see our model driving on test town!
