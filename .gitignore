@@ -3,6 +3,7 @@
 HDMaps/*
 bird_view/logs/*
 
+models/*
 bird_view/notebooks/*
 *.out
 CarlaUE4/*
